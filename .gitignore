@@ -1,10 +1,10 @@
-node_modules
-dist
-build
+**/node_modules
+**/dist
+**/build
 .next
 .cache
+.DS_Store
 .env
 .env.*
-.DS_Store
 coverage
 *.log
