@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@supabase/supabase-js": "^2.55.0",
+    "passkit-generator": "^3.4.0"
+  }
+}
