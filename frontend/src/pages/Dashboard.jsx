@@ -438,11 +438,12 @@ const Dashboard = () => {
       if (error) throw new Error(error.message);
       const base = window.location.origin;
       const previewUrl = `${base}/card/${data.uuid}`;
+      const pkpassUrl = `${base}/api/passes/${data.uuid}`;
       setIssueModal({
         open: true,
         card,
         data: {
-          pkpassUrl: previewUrl,
+          pkpassUrl,
           qrUrl: previewUrl,
         },
         loading: false,
