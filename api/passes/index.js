@@ -1,3 +1,3 @@
 module.exports = (req, res) => {
-  res.status(200).json({ ok: true, route: "/api/passes" });
+  res.status(200).json({ ok: true, at: "/api/passes" });
 };
