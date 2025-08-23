@@ -1,8 +1,0 @@
-{
-  "functions": {
-    "api/**/*.js":  { "runtime": "nodejs22.x" },
-    "api/**/*.cjs": { "runtime": "nodejs22.x" }
-  },
-  "buildCommand": "npm --prefix frontend ci && npm --prefix frontend run build",
-  "outputDirectory": "frontend/dist"
-}
