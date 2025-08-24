@@ -4,15 +4,13 @@ const passkit = require("passkit-generator");
 const fs = require("fs");
 const path = require("path");
 
-const {
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY,
-  PASS_P12_BASE64,
-  PASS_P12_PASSWORD = "",
-  PASS_TYPE_IDENTIFIER,
-  TEAM_IDENTIFIER,
-  ORG_NAME = "Amian",
-} = process.env;
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const PASS_P12_BASE64 = process.env.PASS_P12_BASE64;
+const PASS_P12_PASSWORD = process.env.PASS_P12_PASSWORD || "";
+const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER;
+const TEAM_IDENTIFIER = process.env.TEAM_IDENTIFIER;
+const ORG_NAME = process.env.ORG_NAME || "Amian";
 
 const hex2rgb = (hex) => {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
