@@ -429,7 +429,7 @@ const Dashboard = () => {
             phone: issuePhone || '+77001234567',
             balance: 0,
             max_uses: card.max_uses,
-            qr_value: `${window.location.origin}/card/${uuid}`,
+            qr_value: uuid,
             uuid: uuid,
           },
         ])
