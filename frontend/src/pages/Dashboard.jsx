@@ -18,7 +18,7 @@ function fileToDataUrl(file, cb) {
   reader.readAsDataURL(file);
 }
 
-const DEFAULT_LABELS = [{ label: 'Поле', value: 'Значение' }];
+const DEFAULT_LABELS = [];
 
 const Dashboard = () => {
   const [cards, setCards] = useState([]);
@@ -108,26 +108,12 @@ const Dashboard = () => {
   // --- Загрузка списка карт с backend ---
   React.useEffect(() => {
     if (activeTab !== 'cards' || !currentUser) return;
-    console.log('Загружаем карты для пользователя:', currentUser.id);
     (async () => {
-      try {
-        // Сначала проверим, что таблица существует
-        console.log('Проверяем существование таблицы card_templates...');
-        const { data, error } = await supabase
-          .from('card_templates')
-          .select('*')
-          .eq('user_id', currentUser.id);
-        console.log('Результат загрузки карт:', { data, error });
-        if (error) {
-          console.error('Ошибка загрузки карт:', error);
-          setErrors({ cards: error.message });
-        } else {
-          setCards(data || []);
-        }
-      } catch (err) {
-        console.error('Исключение при загрузке карт:', err);
-        setErrors({ cards: err.message });
-      }
+      const { data, error } = await supabase
+        .from('card_templates')
+        .select('*')
+        .eq('user_id', currentUser.id);
+      setCards(data || []);
     })();
   }, [activeTab, currentUser]);
 
@@ -170,8 +156,7 @@ const Dashboard = () => {
     const errs = {};
     if (!internalName.trim()) errs.internalName = 'Обязательное поле';
     if (!logo) errs.logo = 'Обязательное поле';
-    // Убираем проверку fields, так как они не используются в текущей версии
-    // if (!fields[0]?.label || !fields[0]?.value) errs.fields = 'Заполните хотя бы одно динамическое поле';
+    if (!fields[0]?.label || !fields[0]?.value) errs.fields = 'Заполните хотя бы одно динамическое поле';
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) errs.email = 'Некорректный email';
     if (site && !/^https?:\/\//.test(site)) errs.site = 'Некорректный URL';
     return errs;
@@ -184,95 +169,60 @@ const Dashboard = () => {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    console.log('=== НАЧАЛО СОЗДАНИЯ КАРТЫ ===');
-    console.log('currentUser:', currentUser);
-    console.log('internalName:', internalName);
-    console.log('logo:', logo);
-    
     const errs = validate();
     setErrors(errs);
-    if (Object.keys(errs).length > 0) {
-      console.log('Ошибки валидации:', errs);
-      return;
-    }
-    
-    console.log('Валидация прошла успешно, продолжаем создание карты...');
-    
+    if (Object.keys(errs).length > 0) return;
     setLoading(true);
     setMsg(null);
-    
     try {
       let logoUrlSupabase = null;
       let bgUrlSupabase = null;
-      
       // Загрузка логотипа
       if (logo) {
-        console.log('Загружаем логотип...');
-        console.log('Bucket: card-logos, файл:', logo.name);
         const { data, error } = await supabase.storage
           .from('card-logos')
           .upload(`${currentUser.id}_${Date.now()}_${logo.name}`, logo);
-        if (error) {
-          console.error('Ошибка загрузки логотипа:', error);
-          throw error;
-        }
-        console.log('Логотип загружен:', data);
+        if (error) throw error;
         const { data: publicUrl } = supabase.storage.from('card-logos').getPublicUrl(data.path);
         logoUrlSupabase = publicUrl.publicUrl;
-        console.log('URL логотипа:', logoUrlSupabase);
-      } else {
-        console.log('Логотип не выбран');
       }
-      
       // Загрузка обложки
       if (bg) {
-        console.log('Загружаем обложку...');
         const { data, error } = await supabase.storage
           .from('card-covers')
           .upload(`${currentUser.id}_${Date.now()}_${bg.name}`, bg);
-        if (error) {
-          console.error('Ошибка загрузки обложки:', error);
-          throw error;
-        }
-        console.log('Обложка загружена:', data);
+        if (error) throw error;
         const { data: publicUrl } = supabase.storage.from('card-covers').getPublicUrl(data.path);
         bgUrlSupabase = publicUrl.publicUrl;
-        console.log('URL обложки:', bgUrlSupabase);
       }
-      
-      // Данные для вставки
-      const cardData = {
-        user_id: currentUser.id,
-        internal_name: internalName,
-        user_facing_name: userFacingName,
-        logo_url: logoUrlSupabase,
-        cover_url: bgUrlSupabase,
-        bg_color: bgColor,
-        label_color: labelColor,
-        value_color: valueColor,
-        guest_name_field: guestName,
-        bonus_percent_field: bonusPercent,
-        qr_value_field: qrValue,
-        description: desc,
-        contact_email: email,
-        contact_phone: phone,
-        website_url: site,
-        auto_update_balance: autoUpdateBalance,
-        expires: expires,
-        expires_at: expires ? expiresAt : null,
-        notify_on_use: notifyOnUse,
-        limit_uses: limitUses,
-        max_uses: limitUses ? maxUses : null
-      };
-      
-      console.log('Данные для вставки:', cardData);
-      
+      // Проверка currentUser
+      console.log('currentUser:', currentUser);
       // Запись в таблицу card_templates
-      console.log('Выполняем INSERT в таблицу card_templates...');
       const { data, error } = await supabase
         .from('card_templates')
-        .insert([cardData]);
-      
+        .insert([{
+          user_id: currentUser.id,
+          internal_name: internalName,
+          user_facing_name: userFacingName,
+          logo_url: logoUrlSupabase,
+          cover_url: bgUrlSupabase,
+          bg_color: bgColor,
+          label_color: labelColor,
+          value_color: valueColor,
+          guest_name_field: guestName,
+          bonus_percent_field: bonusPercent,
+          qr_value_field: qrValue,
+          description: desc,
+          contact_email: email,
+          contact_phone: phone,
+          website_url: site,
+          auto_update_balance: autoUpdateBalance,
+          expires: expires,
+          expires_at: expires ? expiresAt : null,
+          notify_on_use: notifyOnUse,
+          limit_uses: limitUses,
+          max_uses: limitUses ? maxUses : null
+        }]);
       console.log('INSERT result', { data, error });
 
       if (error) {
@@ -332,12 +282,12 @@ const Dashboard = () => {
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <div className="flex items-center gap-3">
           {logoUrl ? (
-            <img src={logoUrl} alt="logo" className="w-12 h-12 rounded object-contain" style={{width:60, height:45}} />
+            <img src={logoUrl} alt="logo" className="w-12 h-12 rounded bg-white/80 object-contain" style={{width:60, height:45}} />
           ) : (
             <div className="w-12 h-12 rounded bg-white/20" />
           )}
           {userFacingName && (
-            <span className="text-base font-light" style={{ color: labelColor, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userFacingName}</span>
+            <span className="text-base font-semibold" style={{ color: labelColor, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userFacingName}</span>
           )}
         </div>
         <div className="flex flex-col items-end px-3 py-1 min-w-[90px]" style={{ background: 'transparent' }}>
@@ -390,8 +340,8 @@ const Dashboard = () => {
         <div className="absolute inset-0 bg-white flex flex-col p-6 justify-between z-10 rounded-2xl">
           <div>
             <div className="text-xs text-gray-500 mb-2">Обратная сторона</div>
-            <div className="text-sm font-light break-words whitespace-pre-line mb-2 text-gray-700">{desc || 'Описание карты...'}</div>
-            <div className="text-xs mt-2 text-gray-600">
+            <div className="text-sm font-semibold break-words whitespace-pre-line mb-2">{desc || 'Описание карты...'}</div>
+            <div className="text-xs mt-2">
               {email && <div>Email: {email}</div>}
               {phone && <div>Телефон: {phone}</div>}
               {site && <div>Сайт: <a href={site} className="underline text-blue-600" target="_blank" rel="noopener noreferrer">{site}</a></div>}
@@ -403,56 +353,52 @@ const Dashboard = () => {
   );
 
   // Функция для выдачи карты
-  const openIssueModal = (card) => {
-    // Открываем модалку с формой, без начала вставки в БД
-    setIssueModal({ open: true, card, data: null, loading: false, error: null });
-    // Сбрасываем поля формы
-    setIssueGuestName('');
-    setIssueEmail('');
-    setIssuePhone('');
-  };
-
   const handleIssueCard = async (card) => {
-    // Переводим модалку в режим загрузки при сабмите формы
-    setIssueModal((prev) => ({ ...prev, open: true, card, data: null, loading: true, error: null }));
-    try {
-      // Генерируем uuid для карты
-      const uuid = crypto.randomUUID();
-      const { data, error } = await supabase
-        .from('issued_cards')
-        .insert([
-          {
-            user_id: currentUser.id,
-            card_template_id: card.id,
-            guest_name: issueGuestName || 'Имя клиента',
-            email: issueEmail || 'client@example.com',
-            phone: issuePhone || '+77001234567',
-            balance: 0,
-            max_uses: card.max_uses,
-            qr_value: uuid,
-            uuid: uuid,
-          },
-        ])
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      const base = window.location.origin;
-      const previewUrl = `${base}/card/${data.uuid}`;
-      const pkpassUrl = `${base}/api/passes/${data.uuid}`;
-      setIssueModal({
-        open: true,
-        card,
-        data: {
-          pkpassUrl,
-          qrUrl: previewUrl,
+  setIssueModal({ open: true, card, data: null, loading: true, error: null });
+  try {
+    // Генерируем uuid для карты
+    const uuid = crypto.randomUUID();
+
+    const { data, error } = await supabase
+      .from('issued_cards')
+      .insert([
+        {
+          user_id: currentUser.id,
+          card_template_id: card.id,
+          guest_name: issueGuestName || 'Имя клиента',
+          email: issueEmail || 'client@example.com',
+          phone: issuePhone || '+77001234567',
+          balance: 0,
+          max_uses: card.max_uses,
+          // В qr_value кладём payload, а не ссылку
+          qr_value: uuid,
+          uuid: uuid,
         },
-        loading: false,
-        error: null,
-      });
-    } catch (e) {
-      setIssueModal({ open: true, card: null, data: null, loading: false, error: e.message });
-    }
-  };
+      ])
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    const origin = window.location.origin;
+    const previewUrl = `${origin}/card/${uuid}`;
+    const pkpassUrl = `${origin}/api/passes/${uuid}`;
+
+    setIssueModal({
+      open: true,
+      card,
+      data: {
+        pkpassUrl,
+        qrUrl: previewUrl, // QR ведёт на страницу предпросмотра
+      },
+      loading: false,
+      error: null,
+    });
+  } catch (e) {
+    setIssueModal({ open: true, card: null, data: null, loading: false, error: e.message });
+  }
+};
+
 
   return (
     <div className="font-[Inter] bg-[#F1EFED] min-h-screen w-full">
@@ -569,20 +515,6 @@ const Dashboard = () => {
                   Ваши карты
                 </h2>
                 
-                {errors.cards && (
-                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      <div>
-                        <p className="text-red-800 font-medium">Ошибка загрузки карт</p>
-                        <p className="text-red-700 text-sm">{errors.cards}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
                 {cards.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">🎫</div>
@@ -616,7 +548,7 @@ const Dashboard = () => {
                           {card.contact_phone && <div>Телефон: {card.contact_phone}</div>}
                           {card.website_url && <div>Сайт: <a href={card.website_url} className="underline" target="_blank" rel="noopener noreferrer">{card.website_url}</a></div>}
                         </div>
-                        <button className="mt-2 bg-[#D1E889] hover:bg-[#e6f7a1] text-[#121E1D] font-light rounded-full px-6 py-2 transition-all duration-200 shadow-md shadow-[#D1E889]/20" onClick={() => openIssueModal(card)}>
+                        <button className="mt-2 bg-[#D1E889] hover:bg-[#e6f7a1] text-[#121E1D] font-light rounded-full px-6 py-2 transition-all duration-200 shadow-md shadow-[#D1E889]/20" onClick={() => handleIssueCard(card)}>
                           Выдать карту
                         </button>
                       </div>
@@ -639,12 +571,12 @@ const Dashboard = () => {
                   <>
                     <div className="mb-3">
                       <label htmlFor="internalName" className="block text-xs mb-1 font-medium text-[#232323] font-light"> Внутреннее название <span className="text-red-500">*</span></label>
-                      <input id="internalName" name="internalName" required value={internalName} onChange={e=>setInternalName(e.target.value)} placeholder="Внутреннее название шаблона (не видно клиенту)" className="w-full border rounded px-2 py-1 text-sm text-black placeholder:text-gray-400 bg-white" />
+                      <input id="internalName" name="internalName" required value={internalName} onChange={e=>setInternalName(e.target.value)} placeholder="Внутреннее название шаблона (не видно клиенту)" className="w-full border rounded px-2 py-1 text-sm" />
                       {errors.internalName && <div className="text-xs text-red-500 mt-1">{errors.internalName}</div>}
                     </div>
                     <div className="mb-3">
                       <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Название, которое увидят пользователи</label>
-                      <input value={userFacingName} onChange={e=>setUserFacingName(e.target.value)} placeholder="Название, которое увидит клиент в Wallet" className="w-full border rounded px-2 py-1 text-sm text-[#232323] pl-2 bg-white placeholder:text-gray-400" />
+                      <input value={userFacingName} onChange={e=>setUserFacingName(e.target.value)} placeholder="Название, которое увидит клиент в Wallet" className="w-full border rounded px-2 py-1 text-sm text-[#232323] pl-2" />
                       {/* убираем errors.userFacingName и required */}
                     </div>
                     <div className="mb-3">
@@ -663,7 +595,7 @@ const Dashboard = () => {
                     <div className="flex gap-4 mb-3">
                       <div>
                         <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Цвет фона</label>
-                        <input type="color" value={bgColor} onChange={e=>setBgColor(e.target.value)} className="w-8 h-8 p-0 border-none cursor-pointer" />
+                        <input type="color" value={bgColor} onChange={e=>setBgColor(e.target.value)} disabled={!!bgUrl} className="w-8 h-8 p-0 border-none" />
                       </div>
                       <div>
                         <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Цвет заголовков</label>
@@ -681,7 +613,7 @@ const Dashboard = () => {
                         <select value={qrType} disabled className="border rounded px-2 py-1 text-xs">
                           <option value="qr">QR Code</option>
                         </select>
-                        <input value={qrValue} onChange={e=>setQrValue(e.target.value)} className="border rounded px-2 py-1 text-xs w-40 text-black bg-white placeholder:text-gray-400" />
+                        <input value={qrValue} onChange={e=>setQrValue(e.target.value)} className="border rounded px-2 py-1 text-xs w-40" />
                       </div>
                       <div className="text-[10px] text-gray-400 mt-1">По умолчанию: user.memberId</div>
                     </div>
@@ -691,20 +623,20 @@ const Dashboard = () => {
                   <>
                     <div className="mb-3">
                       <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Описание</label>
-                      <textarea maxLength={500} value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Описание, правила, условия..." className="w-full border rounded px-2 py-1 text-sm min-h-[60px] resize-vertical text-black bg-white placeholder:text-gray-400" />
+                      <textarea maxLength={500} value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Описание, правила, условия..." className="w-full border rounded px-2 py-1 text-sm min-h-[60px] resize-vertical" />
                     </div>
                     <div className="mb-3">
                       <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Контактный email</label>
-                      <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="mail@company.com" className="w-full border rounded px-2 py-1 text-sm text-black bg-white placeholder:text-gray-400" />
+                      <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="mail@company.com" className="w-full border rounded px-2 py-1 text-sm" />
                       {errors.email && <div className="text-xs text-red-500 mt-1">{errors.email}</div>}
                     </div>
                     <div className="mb-3">
                       <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Телефон</label>
-                      <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+7 999 888-77-66" className="w-full border rounded px-2 py-1 text-sm text-black bg-white placeholder:text-gray-400" />
+                      <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+7 999 888-77-66" className="w-full border rounded px-2 py-1 text-sm" />
                     </div>
                     <div className="mb-3">
                       <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Сайт</label>
-                      <input type="url" value={site} onChange={e=>setSite(e.target.value)} placeholder="https://site.com" className="w-full border rounded px-2 py-1 text-sm text-black bg-white placeholder:text-gray-400" />
+                      <input type="url" value={site} onChange={e=>setSite(e.target.value)} placeholder="https://site.com" className="w-full border rounded px-2 py-1 text-sm" />
                       {errors.site && <div className="text-xs text-red-500 mt-1">{errors.site}</div>}
                     </div>
                   </>
@@ -723,7 +655,7 @@ const Dashboard = () => {
                     {expires && (
                       <div className="pl-6 mb-2">
                         <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Срок действия до:</label>
-                        <input type="date" value={expiresAt} onChange={e=>setExpiresAt(e.target.value)} className="border rounded px-2 py-1 text-sm bg-white text-black" />
+                        <input type="date" value={expiresAt} onChange={e=>setExpiresAt(e.target.value)} className="border rounded px-2 py-1 text-sm" />
                       </div>
                     )}
                     <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
@@ -737,7 +669,7 @@ const Dashboard = () => {
                     {limitUses && (
                       <div className="pl-6 mb-2">
                         <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Максимум использований:</label>
-                        <input type="number" min={1} value={maxUses} onChange={e=>setMaxUses(e.target.value)} className="border rounded px-2 py-1 text-sm w-24 bg-white text-black" />
+                        <input type="number" min={1} value={maxUses} onChange={e=>setMaxUses(e.target.value)} className="border rounded px-2 py-1 text-sm w-24" />
                       </div>
                     )}
                   </>
@@ -781,10 +713,8 @@ const Dashboard = () => {
   className="mt-6 bg-[#121e1d] text-white py-2 rounded text-sm w-full disabled:opacity-50" 
   disabled={loading}
 >
-  {loading ? 'Создание…' : 'Создать карту'}
+  Создать карту (loading: {loading ? 'true' : 'false'})
 </button>
-                
-                {/* Тестовая кнопка удалена */}
                 {errors.api && <div className="mt-2 text-center text-red-600 text-sm">{errors.api}</div>}
                 {msg && <div className="mt-2 text-center text-green-600 text-sm">{msg}</div>}
               </div>
