@@ -1,4 +1,4 @@
-// api/passes/[uuid].js — Vercel Node.js, CommonJS, passkit-generator v3 (Buffer Model)
+// api/passes/[uuid].js — Vercel Node.js, CommonJS, passkit-generator v3 (Buffer Model + WWDR normalize)
 const { createClient } = require("@supabase/supabase-js");
 const { PKPass } = require("passkit-generator");
 const fs = require("fs");
@@ -19,7 +19,7 @@ const PASS_P12_PASSWORD = process.env.PASS_P12_PASSWORD || "";
 const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER; // напр. "pass.com.amian"
 const TEAM_IDENTIFIER = process.env.TEAM_IDENTIFIER;           // Apple Team ID
 const ORG_NAME = process.env.ORG_NAME || "Amian";
-const WWDR_CERT_BASE64 = process.env.WWDR_CERT_BASE64;         // PEM в base64
+const WWDR_CERT_BASE64 = process.env.WWDR_CERT_BASE64;         // WWDR (PEM или DER) в base64
 
 // ===== Guards =====
 if (!SUPABASE_URL) throw new Error("SUPABASE_URL missing");
@@ -35,8 +35,28 @@ const hex2rgb = (hex) => {
   return m ? `rgb(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)})` : undefined;
 };
 
-const getWWDR = () => Buffer.from(WWDR_CERT_BASE64, "base64");
-const getP12  = () => Buffer.from(PASS_P12_BASE64, "base64");
+const getP12 = () => Buffer.from(PASS_P12_BASE64, "base64");
+
+// Нормализуем WWDR: принимаем base64 от PEM или DER, на выходе — валидная PEM-СТРОКА
+function getWWDRPem() {
+  const decoded = Buffer.from(WWDR_CERT_BASE64, "base64");
+  const asText = decoded.toString("utf8");
+
+  // Если уже PEM с BEGIN/END — вернём как есть (обрежем лишние пробелы)
+  if (asText.includes("-----BEGIN CERTIFICATE-----")) {
+    return asText.trim();
+  }
+
+  // Иначе считаем, что это DER → оборачиваем в PEM
+  const derB64 = decoded.toString("base64");
+  const lines = derB64.match(/.{1,64}/g) || [derB64];
+  return [
+    "-----BEGIN CERTIFICATE-----",
+    ...lines,
+    "-----END CERTIFICATE-----",
+    "", // финальный перевод строки
+  ].join("\n");
+}
 
 // Node 18/20: global fetch available
 async function fetchBuffer(url) {
@@ -75,7 +95,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 1) Supabase через service role (обходит RLS)
+    // 1) Supabase (service role)
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
     const { data: issued, error: e1 } = await supabase
@@ -98,7 +118,7 @@ module.exports = async (req, res) => {
       return res.status(404).json({ error: "Template not found" });
     }
 
-    // 2) Готовим pass.json (тип задаётся ключом storeCard)
+    // 2) pass.json (тип определяется наличием ключа storeCard)
     const passJson = {
       formatVersion: 1,
       passTypeIdentifier: PASS_TYPE_IDENTIFIER,
@@ -131,21 +151,19 @@ module.exports = async (req, res) => {
       },
     };
 
-    // 3) Создаём PKPass через Buffer Model — ОБЯЗАТЕЛЬНО кладём pass.json
-    //    (см. README: пример Buffer Model с ключом "pass.json") :contentReference[oaicite:1]{index=1}
+    // 3) PKPass через Buffer Model — ОБЯЗАТЕЛЬНО кладём pass.json
     const pass = new PKPass(
       {
         "pass.json": Buffer.from(JSON.stringify(passJson)),
       },
       {
-        wwdr: getWWDR(),
-        signerCert: getP12(),            // p12 контейнер
-        signerKey: getP12(),             // p12 контейнер
+        // ВАЖНО: для WWDR — ПЕМ-СТРОКА; для p12 — бинарный Buffer
+        wwdr: getWWDRPem(),
+        signerCert: getP12(),
+        signerKey: getP12(),
         signerKeyPassphrase: PASS_P12_PASSWORD,
       },
-      {
-        // overrides — можно ничего не указывать, всё уже в pass.json
-      }
+      {}
     );
 
     // 4) ассеты: ОБЯЗАТЕЛЬНО icon.png и icon@2x.png
@@ -165,7 +183,7 @@ module.exports = async (req, res) => {
     const coverBuf = await fetchBuffer(tpl.cover_url);
     if (coverBuf) pass.addBuffer("background.png", coverBuf);
 
-    // 5) штрихкод/QR (в v3 — setBarcodes; можно и оставить поле в pass.json, но метод надёжнее) :contentReference[oaicite:2]{index=2}
+    // 5) штрихкод/QR (в v3 — через setBarcodes)
     const payload = issued.qr_value || uuid;
     pass.setBarcodes({
       message: payload,
