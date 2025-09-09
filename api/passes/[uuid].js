@@ -1,10 +1,23 @@
 // api/passes/[uuid].js
 const { createClient } = require("@supabase/supabase-js");
-const passkit = require("passkit-generator");
 const fs = require("fs");
 const path = require("path");
 
-// ===== ENV =====
+// ------- robust import for passkit-generator (ESM/CJS safe) -------
+function getPasskit() {
+  try {
+    const mod = require("passkit-generator");
+    // support CJS shape: { Pass, WWDR }  OR ESM default: { default: { Pass, WWDR } }
+    const PK = mod?.Pass ? mod : mod?.default;
+    if (!PK?.Pass || !PK?.WWDR) throw new Error("Pass/WWDR missing");
+    return PK;
+  } catch (e) {
+    throw new Error("Failed to load passkit-generator: " + (e?.message || e));
+  }
+}
+const passkit = getPasskit();
+
+// ------- ENV -------
 const SUPABASE_URL =
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -16,18 +29,18 @@ const SERVICE_KEY =
 
 const PASS_P12_BASE64 = process.env.PASS_P12_BASE64;
 const PASS_P12_PASSWORD = process.env.PASS_P12_PASSWORD || "";
-const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER; // e.g. "pass.com.amian"
-const TEAM_IDENTIFIER = process.env.TEAM_IDENTIFIER;           // Apple Team ID
+const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER;
+const TEAM_IDENTIFIER = process.env.TEAM_IDENTIFIER;
 const ORG_NAME = process.env.ORG_NAME || "Amian";
 
-// ===== Guards (даём внятные ошибки, если чего-то нет) =====
+// Guards
 if (!SUPABASE_URL) throw new Error("SUPABASE_URL missing");
 if (!SERVICE_KEY) throw new Error("Service key missing (SUPABASE_SERVICE_ROLE/KEY)");
 if (!PASS_P12_BASE64) throw new Error("PASS_P12_BASE64 missing");
 if (!PASS_TYPE_IDENTIFIER) throw new Error("PASS_TYPE_IDENTIFIER missing");
 if (!TEAM_IDENTIFIER) throw new Error("TEAM_IDENTIFIER missing");
 
-// ===== Utils =====
+// ------- Utils -------
 const hex2rgb = (hex) => {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
   return m ? `rgb(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)})` : undefined;
@@ -35,7 +48,7 @@ const hex2rgb = (hex) => {
 
 const p12Buffer = () => Buffer.from(PASS_P12_BASE64, "base64");
 
-// Node 18+/20+ — есть global fetch
+// Node 18/20: global fetch is available
 async function fetchBuffer(url) {
   try {
     if (!url) return null;
@@ -52,14 +65,14 @@ module.exports = async (req, res) => {
     const uuid = req.query?.uuid;
     if (!uuid) return res.status(400).json({ error: "Missing uuid" });
 
-    // ---- DEBUG MODE: /api/passes/:uuid?debug=1 ----
+    // Debug probe: /api/passes/:uuid?debug=1
     if (req.query.debug === "1") {
       const supabaseDbg = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
       const { data: raw, error: rawErr } = await supabaseDbg
         .from("issued_cards")
         .select("*")
         .eq("uuid", uuid);
-      const mask = (s) => (s ? `${String(s).slice(0, 6)}…${String(s).slice(-4)}` : null);
+      const mask = (s) => (s ? `${String(s).slice(0,6)}…${String(s).slice(-4)}` : null);
       return res.status(200).json({
         ok: true,
         uuid,
@@ -72,7 +85,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 1) читаем issued_cards (через SERVICE KEY — обходит RLS)
+    // 1) Supabase via SERVICE KEY (bypass RLS)
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
     const { data: issued, error: e1 } = await supabase
@@ -85,7 +98,6 @@ module.exports = async (req, res) => {
       return res.status(404).json({ error: "Card not found" });
     }
 
-    // 2) читаем шаблон
     const { data: tpl, error: e2 } = await supabase
       .from("card_templates")
       .select("user_facing_name, logo_url, cover_url, bg_color, label_color, value_color, description, contact_email, contact_phone, website_url")
@@ -96,7 +108,7 @@ module.exports = async (req, res) => {
       return res.status(404).json({ error: "Template not found" });
     }
 
-    // 3) pass.json (storeCard)
+    // 2) pass.json (storeCard)
     const passDef = {
       formatVersion: 1,
       passTypeIdentifier: PASS_TYPE_IDENTIFIER,
@@ -107,7 +119,6 @@ module.exports = async (req, res) => {
       foregroundColor: hex2rgb(tpl.value_color),
       backgroundColor: hex2rgb(tpl.bg_color),
       labelColor: hex2rgb(tpl.label_color),
-
       storeCard: {
         headerFields: [
           { key: "title", label: "Карта", value: tpl.user_facing_name || "Amian" },
@@ -128,7 +139,7 @@ module.exports = async (req, res) => {
           ...(tpl.contact_email ? [{ key: "support", label: "Поддержка", value: tpl.contact_email }] : []),
         ],
         barcode: {
-          message: issued.qr_value || uuid, // payload (а не URL)
+          message: issued.qr_value || uuid,
           format: "PKBarcodeFormatQR",
           messageEncoding: "iso-8859-1",
           altText: uuid,
@@ -136,9 +147,10 @@ module.exports = async (req, res) => {
       },
     };
 
+    // 3) build pass model (handle ESM/CJS properly)
     const model = passkit.Pass.from(passDef);
 
-    // 4) ассеты: обязательные icon* из репо
+    // 4) required assets: icon.png & icon@2x.png
     const assetsDir = path.join(process.cwd(), "backend", "pass-assets");
     for (const name of ["icon.png", "icon@2x.png"]) {
       const p = path.join(assetsDir, name);
@@ -148,15 +160,14 @@ module.exports = async (req, res) => {
       model.addBuffer(name, fs.readFileSync(p));
     }
 
-    // 4.1) логотип из шаблона → logo.png
+    // optional assets from template
     const logoBuf = await fetchBuffer(tpl.logo_url);
     if (logoBuf) model.addBuffer("logo.png", logoBuf);
 
-    // 4.2) обложка → background.png
     const coverBuf = await fetchBuffer(tpl.cover_url);
     if (coverBuf) model.addBuffer("background.png", coverBuf);
 
-    // 5) сертификаты и генерация
+    // 5) sign
     const cert = {
       wwdr: passkit.WWDR,
       signerCert: p12Buffer(),
@@ -173,7 +184,7 @@ module.exports = async (req, res) => {
     });
     const pkpass = Buffer.concat(chunks);
 
-    // 6) отдаём файл
+    // 6) send
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader("Content-Disposition", "attachment; filename=card.pkpass");
     res.status(200).send(pkpass);
@@ -182,4 +193,3 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: "Failed to generate pass", detail: String(err?.message || err) });
   }
 };
-
