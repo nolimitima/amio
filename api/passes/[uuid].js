@@ -1,4 +1,4 @@
-// api/passes/[uuid].js — Vercel Node.js, CommonJS, passkit-generator v3
+// api/passes/[uuid].js — Vercel Node.js, CommonJS, passkit-generator v3 (Buffer Model)
 const { createClient } = require("@supabase/supabase-js");
 const { PKPass } = require("passkit-generator");
 const fs = require("fs");
@@ -98,9 +98,8 @@ module.exports = async (req, res) => {
       return res.status(404).json({ error: "Template not found" });
     }
 
-    // 2) props для v3 (ОБЯЗАТЕЛЬНО: type)
-    const props = {
-      type: "storeCard",
+    // 2) Готовим pass.json (тип задаётся ключом storeCard)
+    const passJson = {
       formatVersion: 1,
       passTypeIdentifier: PASS_TYPE_IDENTIFIER,
       teamIdentifier: TEAM_IDENTIFIER,
@@ -132,16 +131,21 @@ module.exports = async (req, res) => {
       },
     };
 
-    // 3) создаём PKPass (v3)
+    // 3) Создаём PKPass через Buffer Model — ОБЯЗАТЕЛЬНО кладём pass.json
+    //    (см. README: пример Buffer Model с ключом "pass.json") :contentReference[oaicite:1]{index=1}
     const pass = new PKPass(
-      {}, // buffers (добавим ниже)
+      {
+        "pass.json": Buffer.from(JSON.stringify(passJson)),
+      },
       {
         wwdr: getWWDR(),
         signerCert: getP12(),            // p12 контейнер
         signerKey: getP12(),             // p12 контейнер
         signerKeyPassphrase: PASS_P12_PASSWORD,
       },
-      props
+      {
+        // overrides — можно ничего не указывать, всё уже в pass.json
+      }
     );
 
     // 4) ассеты: ОБЯЗАТЕЛЬНО icon.png и icon@2x.png
@@ -161,7 +165,7 @@ module.exports = async (req, res) => {
     const coverBuf = await fetchBuffer(tpl.cover_url);
     if (coverBuf) pass.addBuffer("background.png", coverBuf);
 
-    // 5) штрихкод/QR (v3: через setBarcodes)
+    // 5) штрихкод/QR (в v3 — setBarcodes; можно и оставить поле в pass.json, но метод надёжнее) :contentReference[oaicite:2]{index=2}
     const payload = issued.qr_value || uuid;
     pass.setBarcodes({
       message: payload,
@@ -170,7 +174,7 @@ module.exports = async (req, res) => {
     });
 
     // 6) собираем и отдаём
-    const pkpass = pass.getAsBuffer(); // можно и stream, но буфер проще для serverless
+    const pkpass = pass.getAsBuffer();
 
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader("Content-Disposition", "attachment; filename=card.pkpass");
