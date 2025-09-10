@@ -1,11 +1,13 @@
 // api/passes/[uuid].js
 // Vercel Serverless Function (Node 20, CommonJS)
-// passkit-generator v3 + Supabase. Работает с Buffer Model и устойчивой нормализацией WWDR/P12.
+// Supabase + passkit-generator v3
+// Надёжная работа с сертификатами: WWDR (строка PEM) + извлечение cert/key из .p12
 
 const { createClient } = require("@supabase/supabase-js");
 const { PKPass } = require("passkit-generator");
 const fs = require("fs");
 const path = require("path");
+const forge = require("node-forge");
 
 // =============== ENV =================
 const SUPABASE_URL =
@@ -22,7 +24,7 @@ const PASS_P12_PASSWORD = process.env.PASS_P12_PASSWORD || "";
 const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER; // напр. "pass.com.amian"
 const TEAM_IDENTIFIER = process.env.TEAM_IDENTIFIER;           // Apple Team ID
 const ORG_NAME = process.env.ORG_NAME || "Amian";
-const WWDR_CERT_BASE64 = process.env.WWDR_CERT_BASE64;         // WWDR (PEM||base64(PEM)||base64(DER))
+const WWDR_CERT_BASE64 = process.env.WWDR_CERT_BASE64;         // (строка PEM ИЛИ base64(PEM/DER))
 
 // Guards
 if (!SUPABASE_URL) throw new Error("SUPABASE_URL missing");
@@ -38,56 +40,70 @@ const hex2rgb = (hex) => {
   return m ? `rgb(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)})` : undefined;
 };
 
-// robust conversion DER->PEM
-function toPemFromDerBuffer(derBuf) {
+// DER -> PEM
+function derToPemCertString(derBuf) {
   const derB64 = derBuf.toString("base64");
   const lines = derB64.match(/.{1,64}/g) || [derB64];
   return `-----BEGIN CERTIFICATE-----\n${lines.join("\n")}\n-----END CERTIFICATE-----\n`;
 }
 
-// Accepts: raw PEM (with markers) OR base64(PEM text) OR base64(DER bytes).
-// Returns: Buffer of PEM (may contain 1..N certs, LF normalized).
-function getWWDRPemBuffer() {
+// Возвращает **СТРОКУ PEM** WWDR (не Buffer!)
+function getWwdrPemString() {
   const raw = WWDR_CERT_BASE64 || "";
 
-  // Case A: ENV already contains PEM with markers (not base64)
+  // Case A: ENV уже содержит сырой PEM (с маркерами)
   if (raw.includes("-----BEGIN CERTIFICATE-----")) {
-    const pem = raw.replace(/\r\n/g, "\n").trim() + "\n";
-    return Buffer.from(pem, "utf8");
+    // Удаляем BOM/CRLF, лишнее по краям, гарантируем финальный \n
+    let s = raw.replace(/\r\n/g, "\n").trim() + "\n";
+    if (s.charCodeAt(0) === 0xFEFF) s = s.slice(1);
+    // Вычищаем возможный шум до BEGIN (на некоторых экспортах)
+    const begin = s.indexOf("-----BEGIN CERTIFICATE-----");
+    const end = s.lastIndexOf("-----END CERTIFICATE-----");
+    if (begin >= 0 && end >= 0) {
+      s = s.slice(begin, end + "-----END CERTIFICATE-----".length) + "\n";
+    }
+    return s;
   }
 
-  // Case B: ENV is base64(...)
+  // Case B: ENV — base64(...)
   let decoded;
   try {
     decoded = Buffer.from(raw, "base64");
   } catch {
-    throw new Error("WWDR_CERT_BASE64 is not valid base64/PEM/DER");
+    throw new Error("WWDR_CERT_BASE64: invalid base64");
   }
-  if (!decoded || !decoded.length) {
-    throw new Error("WWDR_CERT_BASE64 decoded empty");
-  }
+  if (!decoded || !decoded.length) throw new Error("WWDR_CERT_BASE64 decoded empty");
 
-  // If decoded looks like PEM text
+  // Если это base64 от PEM-текста
   const asText = decoded.toString("utf8");
   if (asText.includes("-----BEGIN CERTIFICATE-----")) {
-    const pem = asText.replace(/\r\n/g, "\n").trim() + "\n";
-    return Buffer.from(pem, "utf8");
+    let s = asText.replace(/\r\n/g, "\n").trim() + "\n";
+    const begin = s.indexOf("-----BEGIN CERTIFICATE-----");
+    const end = s.lastIndexOf("-----END CERTIFICATE-----");
+    if (begin >= 0 && end >= 0) {
+      s = s.slice(begin, end + "-----END CERTIFICATE-----".length) + "\n";
+    }
+    return s;
   }
 
-  // Otherwise it's DER bytes -> wrap to PEM
-  const pem = toPemFromDerBuffer(decoded);
-  return Buffer.from(pem, "utf8");
+  // Иначе это DER -> оборачиваем в PEM-строку
+  return derToPemCertString(decoded);
 }
 
-function basicPemSanityCheck(pemBuf) {
-  const s = pemBuf.toString("utf8");
-  if (!s.includes("-----BEGIN CERTIFICATE-----") || !s.includes("-----END CERTIFICATE-----")) {
+function basicPemSanityCheckString(pemString) {
+  if (
+    !pemString.includes("-----BEGIN CERTIFICATE-----") ||
+    !pemString.includes("-----END CERTIFICATE-----")
+  ) {
     throw new Error("WWDR PEM markers not found");
   }
-  const blocks = s.split("-----BEGIN CERTIFICATE-----").slice(1);
-  if (!blocks.length) throw new Error("No WWDR cert blocks detected");
-  for (const b of blocks) {
-    const body = b.split("-----END CERTIFICATE-----")[0] || "";
+  // Верифицируем base64 внутри блоков
+  const chunks = pemString
+    .split("-----BEGIN CERTIFICATE-----")
+    .slice(1)
+    .map((chunk) => chunk.split("-----END CERTIFICATE-----")[0] || "");
+  if (!chunks.length) throw new Error("No WWDR cert blocks detected");
+  for (const body of chunks) {
     const cleaned = body.replace(/\s+/g, "");
     if (!/^[A-Za-z0-9+/=]+$/.test(cleaned)) {
       throw new Error("WWDR PEM contains non-base64 characters");
@@ -101,11 +117,36 @@ function getP12Buffer() {
   return buf;
 }
 
-// Ensure clean UTF-8 string (strip BOM just in case)
-function pemBufToString(pemBuf) {
-  let s = pemBuf.toString("utf8");
-  if (s.charCodeAt(0) === 0xFEFF) s = s.slice(1);
-  return s;
+// Извлекаем privateKey/certificate из PKCS#12 (.p12) и возвращаем PEM-строки
+function parseP12ToPem(p12Buf, passphrase) {
+  // forge требует "binary string" для fromDer
+  const derBinary = p12Buf.toString("binary");
+  const asn1 = forge.asn1.fromDer(derBinary);
+  const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, passphrase);
+
+  let keyObj = null;
+  let certObj = null;
+
+  for (const safeContent of p12.safeContents) {
+    for (const safeBag of safeContent.safeBags) {
+      if (safeBag.type === forge.pki.oids.pkcs8ShroudedKeyBag && safeBag.key) {
+        keyObj = safeBag.key;
+      } else if (safeBag.type === forge.pki.oids.keyBag && safeBag.key) {
+        keyObj = safeBag.key;
+      } else if (safeBag.type === forge.pki.oids.certBag && safeBag.cert) {
+        certObj = safeBag.cert;
+      }
+    }
+  }
+
+  if (!keyObj || !certObj) {
+    throw new Error("Could not extract key/cert from p12");
+  }
+
+  const privateKeyPem = forge.pki.privateKeyToPem(keyObj);
+  const certificatePem = forge.pki.certificateToPem(certObj);
+
+  return { privateKeyPem, certificatePem };
 }
 
 // Fetch helper (Node18/20 has global fetch)
@@ -129,16 +170,32 @@ module.exports = async (req, res) => {
     // ---------- CERT DIAGNOSTICS ----------
     if (req.query.certdiag === "1") {
       try {
-        const wwdr = getWWDRPemBuffer();
-        basicPemSanityCheck(wwdr);
+        const wwdrPem = getWwdrPemString();
+        basicPemSanityCheckString(wwdrPem);
         const p12 = getP12Buffer();
         return res.status(200).json({
           ok: true,
-          wwdrBytes: wwdr.length,
+          wwdrBytes: Buffer.byteLength(wwdrPem, "utf8"),
           p12Bytes: p12.length,
           passTypeId: PASS_TYPE_IDENTIFIER,
           teamId: TEAM_IDENTIFIER,
-          tip: "WWDR/P12 buffers look sane. Try downloading /api/passes/<uuid>."
+          tip: "WWDR/P12 look sane. Try /api/passes/<uuid>."
+        });
+      } catch (e) {
+        return res.status(400).json({ ok: false, error: String(e?.message || e) });
+      }
+    }
+
+    if (req.query.p12diag === "1") {
+      try {
+        const p12Buf = getP12Buffer();
+        const { privateKeyPem, certificatePem } = parseP12ToPem(p12Buf, PASS_P12_PASSWORD);
+        return res.status(200).json({
+          ok: true,
+          privateKeyBytes: Buffer.byteLength(privateKeyPem, "utf8"),
+          certificateBytes: Buffer.byteLength(certificatePem, "utf8"),
+          previewKey: privateKeyPem.slice(0, 32) + "...",
+          previewCert: certificatePem.slice(0, 32) + "..."
         });
       } catch (e) {
         return res.status(400).json({ ok: false, error: String(e?.message || e) });
@@ -215,20 +272,20 @@ module.exports = async (req, res) => {
       },
     };
 
-    // ---------- CERTS (robust) ----------
-    const wwdrPemBuf = getWWDRPemBuffer();
-    basicPemSanityCheck(wwdrPemBuf);
+    // ---------- CERTS ----------
+    const wwdrPem = getWwdrPemString();               // строка PEM
+    basicPemSanityCheckString(wwdrPem);
+
     const p12Buf = getP12Buffer();
+    const { privateKeyPem, certificatePem } = parseP12ToPem(p12Buf, PASS_P12_PASSWORD);
 
     // ---------- PKPass (Buffer Model) ----------
     const pass = new PKPass(
       { "pass.json": Buffer.from(JSON.stringify(passJson)) },
       {
-        // ВАЖНО: WWDR как СТРОКА PEM (utf8), а не Buffer — этого хочет node-forge
-        wwdr: pemBufToString(wwdrPemBuf),
-        // p12 оставляем Buffer
-        signerCert: p12Buf,
-        signerKey: p12Buf,
+        wwdr: wwdrPem,                 // строка PEM
+        signerCert: certificatePem,    // строка PEM
+        signerKey: privateKeyPem,      // строка PEM
         signerKeyPassphrase: PASS_P12_PASSWORD,
       },
       {}
@@ -270,4 +327,3 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: "Failed to generate pass", detail: String(err?.message || err) });
   }
 };
-
