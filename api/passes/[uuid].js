@@ -1,10 +1,13 @@
-// api/passes/[uuid].js — Vercel Node.js, CommonJS, passkit-generator v3 (Buffer Model + WWDR normalize)
+// api/passes/[uuid].js
+// Vercel Serverless Function (Node 20, CommonJS)
+// passkit-generator v3 + Supabase. Работает с Buffer Model и устойчивой нормализацией WWDR/P12.
+
 const { createClient } = require("@supabase/supabase-js");
 const { PKPass } = require("passkit-generator");
 const fs = require("fs");
 const path = require("path");
 
-// ===== ENV =====
+// =============== ENV =================
 const SUPABASE_URL =
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -19,9 +22,9 @@ const PASS_P12_PASSWORD = process.env.PASS_P12_PASSWORD || "";
 const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER; // напр. "pass.com.amian"
 const TEAM_IDENTIFIER = process.env.TEAM_IDENTIFIER;           // Apple Team ID
 const ORG_NAME = process.env.ORG_NAME || "Amian";
-const WWDR_CERT_BASE64 = process.env.WWDR_CERT_BASE64;         // WWDR (PEM или DER) в base64
+const WWDR_CERT_BASE64 = process.env.WWDR_CERT_BASE64;         // WWDR (PEM||base64(PEM)||base64(DER))
 
-// ===== Guards =====
+// Guards
 if (!SUPABASE_URL) throw new Error("SUPABASE_URL missing");
 if (!SERVICE_KEY) throw new Error("Service key missing (SUPABASE_SERVICE_ROLE/KEY)");
 if (!PASS_P12_BASE64) throw new Error("PASS_P12_BASE64 missing");
@@ -29,36 +32,76 @@ if (!PASS_TYPE_IDENTIFIER) throw new Error("PASS_TYPE_IDENTIFIER missing");
 if (!TEAM_IDENTIFIER) throw new Error("TEAM_IDENTIFIER missing");
 if (!WWDR_CERT_BASE64) throw new Error("WWDR_CERT_BASE64 missing");
 
-// ===== Utils =====
+// =============== UTILS ===============
 const hex2rgb = (hex) => {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
   return m ? `rgb(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)})` : undefined;
 };
 
-const getP12 = () => Buffer.from(PASS_P12_BASE64, "base64");
-
-// Нормализуем WWDR: принимаем base64 от PEM или DER, на выходе — валидная PEM-СТРОКА
-function getWWDRPem() {
-  const decoded = Buffer.from(WWDR_CERT_BASE64, "base64");
-  const asText = decoded.toString("utf8");
-
-  // Если уже PEM с BEGIN/END — вернём как есть (обрежем лишние пробелы)
-  if (asText.includes("-----BEGIN CERTIFICATE-----")) {
-    return asText.trim();
-  }
-
-  // Иначе считаем, что это DER → оборачиваем в PEM
-  const derB64 = decoded.toString("base64");
+// robust conversion DER->PEM
+function toPemFromDerBuffer(derBuf) {
+  const derB64 = derBuf.toString("base64");
   const lines = derB64.match(/.{1,64}/g) || [derB64];
-  return [
-    "-----BEGIN CERTIFICATE-----",
-    ...lines,
-    "-----END CERTIFICATE-----",
-    "", // финальный перевод строки
-  ].join("\n");
+  return `-----BEGIN CERTIFICATE-----\n${lines.join("\n")}\n-----END CERTIFICATE-----\n`;
 }
 
-// Node 18/20: global fetch available
+// Accepts: raw PEM (with markers) OR base64(PEM text) OR base64(DER bytes).
+// Returns: Buffer of PEM (may contain 1..N certs, LF normalized).
+function getWWDRPemBuffer() {
+  const raw = WWDR_CERT_BASE64 || "";
+
+  // Case A: ENV already contains PEM with markers (not base64)
+  if (raw.includes("-----BEGIN CERTIFICATE-----")) {
+    const pem = raw.replace(/\r\n/g, "\n").trim() + "\n";
+    return Buffer.from(pem, "utf8");
+  }
+
+  // Case B: ENV is base64(...)
+  let decoded;
+  try {
+    decoded = Buffer.from(raw, "base64");
+  } catch {
+    throw new Error("WWDR_CERT_BASE64 is not valid base64/PEM/DER");
+  }
+  if (!decoded || !decoded.length) {
+    throw new Error("WWDR_CERT_BASE64 decoded empty");
+  }
+
+  // If decoded looks like PEM text
+  const asText = decoded.toString("utf8");
+  if (asText.includes("-----BEGIN CERTIFICATE-----")) {
+    const pem = asText.replace(/\r\n/g, "\n").trim() + "\n";
+    return Buffer.from(pem, "utf8");
+  }
+
+  // Otherwise it's DER bytes -> wrap to PEM
+  const pem = toPemFromDerBuffer(decoded);
+  return Buffer.from(pem, "utf8");
+}
+
+function basicPemSanityCheck(pemBuf) {
+  const s = pemBuf.toString("utf8");
+  if (!s.includes("-----BEGIN CERTIFICATE-----") || !s.includes("-----END CERTIFICATE-----")) {
+    throw new Error("WWDR PEM markers not found");
+  }
+  const blocks = s.split("-----BEGIN CERTIFICATE-----").slice(1);
+  if (!blocks.length) throw new Error("No WWDR cert blocks detected");
+  for (const b of blocks) {
+    const body = b.split("-----END CERTIFICATE-----")[0] || "";
+    const cleaned = body.replace(/\s+/g, "");
+    if (!/^[A-Za-z0-9+/=]+$/.test(cleaned)) {
+      throw new Error("WWDR PEM contains non-base64 characters");
+    }
+  }
+}
+
+function getP12Buffer() {
+  const buf = Buffer.from(PASS_P12_BASE64, "base64");
+  if (!buf.length) throw new Error("PASS_P12_BASE64 not valid base64");
+  return buf;
+}
+
+// Fetch helper (Node18/20 has global fetch)
 async function fetchBuffer(url) {
   try {
     if (!url) return null;
@@ -70,12 +113,32 @@ async function fetchBuffer(url) {
   }
 }
 
+// =============== HANDLER ===============
 module.exports = async (req, res) => {
   try {
     const uuid = req.query?.uuid;
     if (!uuid) return res.status(400).json({ error: "Missing uuid" });
 
-    // ---- DEBUG: /api/passes/:uuid?debug=1 ----
+    // ---------- CERT DIAGNOSTICS ----------
+    if (req.query.certdiag === "1") {
+      try {
+        const wwdr = getWWDRPemBuffer();
+        basicPemSanityCheck(wwdr);
+        const p12 = getP12Buffer();
+        return res.status(200).json({
+          ok: true,
+          wwdrBytes: wwdr.length,
+          p12Bytes: p12.length,
+          passTypeId: PASS_TYPE_IDENTIFIER,
+          teamId: TEAM_IDENTIFIER,
+          tip: "WWDR/P12 buffers look sane. Try downloading /api/passes/<uuid>."
+        });
+      } catch (e) {
+        return res.status(400).json({ ok: false, error: String(e?.message || e) });
+      }
+    }
+
+    // ---------- DEBUG DB ----------
     if (req.query.debug === "1") {
       const supabaseDbg = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
       const { data: raw, error: rawErr } = await supabaseDbg
@@ -95,7 +158,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 1) Supabase (service role)
+    // ---------- DB READ ----------
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
     const { data: issued, error: e1 } = await supabase
@@ -103,22 +166,16 @@ module.exports = async (req, res) => {
       .select("uuid, guest_name, email, phone, balance, qr_value, card_template_id")
       .eq("uuid", uuid)
       .single();
-
-    if (e1 || !issued) {
-      return res.status(404).json({ error: "Card not found" });
-    }
+    if (e1 || !issued) return res.status(404).json({ error: "Card not found" });
 
     const { data: tpl, error: e2 } = await supabase
       .from("card_templates")
       .select("user_facing_name, logo_url, cover_url, bg_color, label_color, value_color, description, contact_email, contact_phone, website_url")
       .eq("id", issued.card_template_id)
       .single();
+    if (e2 || !tpl) return res.status(404).json({ error: "Template not found" });
 
-    if (e2 || !tpl) {
-      return res.status(404).json({ error: "Template not found" });
-    }
-
-    // 2) pass.json (тип определяется наличием ключа storeCard)
+    // ---------- pass.json ----------
     const passJson = {
       formatVersion: 1,
       passTypeIdentifier: PASS_TYPE_IDENTIFIER,
@@ -151,22 +208,25 @@ module.exports = async (req, res) => {
       },
     };
 
-    // 3) PKPass через Buffer Model — ОБЯЗАТЕЛЬНО кладём pass.json
+    // ---------- CERTS (robust) ----------
+    const wwdrPemBuf = getWWDRPemBuffer();
+    basicPemSanityCheck(wwdrPemBuf);
+    const p12Buf = getP12Buffer();
+
+    // ---------- PKPass (Buffer Model) ----------
     const pass = new PKPass(
+      { "pass.json": Buffer.from(JSON.stringify(passJson)) },
       {
-        "pass.json": Buffer.from(JSON.stringify(passJson)),
-      },
-      {
-        // ВАЖНО: для WWDR — ПЕМ-СТРОКА; для p12 — бинарный Buffer
-        wwdr: getWWDRPem(),
-        signerCert: getP12(),
-        signerKey: getP12(),
+        wwdr: wwdrPemBuf,           // Buffer PEM (can hold chain)
+        signerCert: p12Buf,         // same p12 buffer for cert+key
+        signerKey: p12Buf,
         signerKeyPassphrase: PASS_P12_PASSWORD,
       },
       {}
     );
 
-    // 4) ассеты: ОБЯЗАТЕЛЬНО icon.png и icon@2x.png
+    // ---------- Assets (required icon) ----------
+    // Убедись, что эти файлы упакованы в билд Vercel (в репо в каталоге backend/pass-assets).
     const assetsDir = path.join(process.cwd(), "backend", "pass-assets");
     for (const name of ["icon.png", "icon@2x.png"]) {
       const p = path.join(assetsDir, name);
@@ -176,14 +236,13 @@ module.exports = async (req, res) => {
       pass.addBuffer(name, fs.readFileSync(p));
     }
 
-    // 4.1) дополнительные ассеты из шаблона
+    // Optional assets from template
     const logoBuf = await fetchBuffer(tpl.logo_url);
     if (logoBuf) pass.addBuffer("logo.png", logoBuf);
-
     const coverBuf = await fetchBuffer(tpl.cover_url);
     if (coverBuf) pass.addBuffer("background.png", coverBuf);
 
-    // 5) штрихкод/QR (в v3 — через setBarcodes)
+    // ---------- Barcode / QR ----------
     const payload = issued.qr_value || uuid;
     pass.setBarcodes({
       message: payload,
@@ -191,15 +250,16 @@ module.exports = async (req, res) => {
       altText: uuid,
     });
 
-    // 6) собираем и отдаём
+    // ---------- Build & Send ----------
     const pkpass = pass.getAsBuffer();
-
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
-    res.setHeader("Content-Disposition", "attachment; filename=card.pkpass");
-    res.status(200).send(pkpass);
+    res.setHeader("Content-Disposition", `attachment; filename=${uuid}.pkpass`);
+    // Немного кэширования для CDN (не обязательно)
+    res.setHeader("Cache-Control", "private, max-age=60");
+    return res.status(200).send(pkpass);
+
   } catch (err) {
     console.error("PKPASS error:", err);
-    res.status(500).json({ error: "Failed to generate pass", detail: String(err?.message || err) });
+    return res.status(500).json({ error: "Failed to generate pass", detail: String(err?.message || err) });
   }
 };
-
