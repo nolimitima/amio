@@ -101,6 +101,13 @@ function getP12Buffer() {
   return buf;
 }
 
+// Ensure clean UTF-8 string (strip BOM just in case)
+function pemBufToString(pemBuf) {
+  let s = pemBuf.toString("utf8");
+  if (s.charCodeAt(0) === 0xFEFF) s = s.slice(1);
+  return s;
+}
+
 // Fetch helper (Node18/20 has global fetch)
 async function fetchBuffer(url) {
   try {
@@ -217,8 +224,10 @@ module.exports = async (req, res) => {
     const pass = new PKPass(
       { "pass.json": Buffer.from(JSON.stringify(passJson)) },
       {
-        wwdr: wwdrPemBuf,           // Buffer PEM (can hold chain)
-        signerCert: p12Buf,         // same p12 buffer for cert+key
+        // ВАЖНО: WWDR как СТРОКА PEM (utf8), а не Buffer — этого хочет node-forge
+        wwdr: pemBufToString(wwdrPemBuf),
+        // p12 оставляем Buffer
+        signerCert: p12Buf,
         signerKey: p12Buf,
         signerKeyPassphrase: PASS_P12_PASSWORD,
       },
@@ -226,7 +235,6 @@ module.exports = async (req, res) => {
     );
 
     // ---------- Assets (required icon) ----------
-    // Убедись, что эти файлы упакованы в билд Vercel (в репо в каталоге backend/pass-assets).
     const assetsDir = path.join(process.cwd(), "backend", "pass-assets");
     for (const name of ["icon.png", "icon@2x.png"]) {
       const p = path.join(assetsDir, name);
@@ -254,7 +262,6 @@ module.exports = async (req, res) => {
     const pkpass = pass.getAsBuffer();
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader("Content-Disposition", `attachment; filename=${uuid}.pkpass`);
-    // Немного кэширования для CDN (не обязательно)
     res.setHeader("Cache-Control", "private, max-age=60");
     return res.status(200).send(pkpass);
 
@@ -263,3 +270,4 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: "Failed to generate pass", detail: String(err?.message || err) });
   }
 };
+
