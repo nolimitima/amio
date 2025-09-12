@@ -6,15 +6,7 @@
   ],
   "routes": [
     { "src": "^/api/(.*)$", "dest": "/api/$1" },
-
-    // отдать реальные файлы из frontend/dist по их путям
-    { "src": "^/(.*\\.(?:css|js|png|jpg|jpeg|gif|svg|ico|txt|json|map))$", "dest": "/frontend/dist/$1" },
-    { "src": "^/assets/(.*)$", "dest": "/frontend/dist/assets/$1" },
-
-    // прямой доступ к index.html (на всякий)
-    { "src": "^/index.html$", "dest": "/frontend/dist/index.html" },
-
-    // SPA fallback: все прочие пути -> index.html из frontend/dist
-    { "src": "^(?!/api/).*", "dest": "/frontend/dist/index.html" }
+    { "handle": "filesystem" },
+    { "src": ".*", "dest": "/index.html" }
   ]
 }
