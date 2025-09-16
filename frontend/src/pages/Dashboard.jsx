@@ -399,7 +399,6 @@ const Dashboard = () => {
   }
 };
 
-
   return (
     <div className="font-[Inter] bg-[#F1EFED] min-h-screen w-full">
       {/* HEADER */}

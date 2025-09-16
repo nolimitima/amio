@@ -30,3 +30,9 @@ $$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
 
 -- Даем право вызывать функцию анонимным и аутентифицированным
 GRANT EXECUTE ON FUNCTION public.get_issued_card_by_uuid(uuid) TO anon, authenticated;
+
+
+
+
+
+
