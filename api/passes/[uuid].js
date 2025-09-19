@@ -234,7 +234,8 @@ module.exports = async (req, res) => {
 
     const { data: tpl, error: e2 } = await supabase
       .from("card_templates")
-      .select("user_facing_name, logo_url, cover_url, bg_color, label_color, value_color, description, contact_email, contact_phone, website_url")
+      // ИЗМЕНЕНИЕ №1: Добавлено поле bonus_percent_field в запрос
+      .select("user_facing_name, logo_url, cover_url, bg_color, label_color, value_color, description, contact_email, contact_phone, website_url, bonus_percent_field")
       .eq("id", issued.card_template_id)
       .single();
     if (e2 || !tpl) return res.status(404).json({ error: "Template not found" });
@@ -250,18 +251,21 @@ module.exports = async (req, res) => {
       foregroundColor: hex2rgb(tpl.value_color),
       backgroundColor: hex2rgb(tpl.bg_color),
       labelColor: hex2rgb(tpl.label_color),
+      // ИЗМЕНЕНИЕ №2: Полностью переработанная структура storeCard
       storeCard: {
         headerFields: [
-          { key: "title", label: "Карта", value: tpl.user_facing_name || "Amian" },
+          // Помещаем баланс в правый верхний угол, как в превью
+          { key: "balance", label: "Баланс", value: `${issued.balance ?? 0} B` },
         ],
         primaryFields: [
           { key: "holder", label: "Гость", value: issued.guest_name || "Клиент" },
         ],
         secondaryFields: [
-          { key: "balance", label: "Баланс", value: String(issued.balance ?? 0) },
-          { key: "email", label: "Email", value: issued.email || "-" },
+          // Добавляем поле с бонусом, если оно указано в шаблоне
+          ...(tpl.bonus_percent_field ? [{ key: "bonus", label: "Бонус", value: `${tpl.bonus_percent_field}%` }] : []),
         ],
         auxiliaryFields: [
+          { key: "email", label: "Email", value: issued.email || "-" },
           { key: "phone", label: "Телефон", value: issued.phone || "-" },
         ],
         backFields: [
