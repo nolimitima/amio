@@ -1,7 +1,6 @@
 // api/passes/[uuid].js
 // Vercel Serverless Function (Node 20, CommonJS)
 // Supabase + passkit-generator v3
-// Надёжная работа с сертификатами: WWDR (строка PEM) + извлечение cert/key из .p12
 
 const { createClient } = require("@supabase/supabase-js");
 const { PKPass } = require("passkit-generator");
@@ -39,8 +38,6 @@ const hex2rgb = (hex) => {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
   return m ? `rgb(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)})` : undefined;
 };
-
-// ... (остальные вспомогательные функции getWwdrPemString, parseP12ToPem и т.д. остаются без изменений) ...
 
 function derToPemCertString(derBuf) {
   const derB64 = derBuf.toString("base64");
@@ -142,14 +139,11 @@ async function fetchBuffer(url) {
   }
 }
 
-
 // =============== HANDLER ===============
 module.exports = async (req, res) => {
   try {
     const uuid = req.query?.uuid;
     if (!uuid) return res.status(400).json({ error: "Missing uuid" });
-
-    // ... (диагностические эндпоинты остаются без изменений) ...
 
     // ---------- DB READ ----------
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
@@ -176,32 +170,40 @@ module.exports = async (req, res) => {
       organizationName: ORG_NAME,
       description: tpl.user_facing_name || "Digital Card",
       serialNumber: uuid,
-      foregroundColor: hex2rgb(tpl.value_color), // Цвет для значений
-      backgroundColor: hex2rgb(tpl.bg_color),   // Цвет фона
-      labelColor: hex2rgb(tpl.label_color),       // Цвет для заголовков
-      
-      // === ГЛАВНОЕ ИЗМЕНЕНИЕ ЗДЕСЬ ===
+
+      // Название рядом с логотипом
+      logoText: tpl.user_facing_name || ORG_NAME,
+
+      // Цвета
+      foregroundColor: hex2rgb(tpl.value_color || "#232323"),
+      backgroundColor: hex2rgb(tpl.bg_color || "#10182B"),
+      labelColor:      hex2rgb(tpl.label_color || "#F1EFED"),
+
       storeCard: {
+        // Header — только баланс
         headerFields: [
-          { key: "balance", label: "Баланс", value: `${issued.balance ?? 0} B` },
+          { key: "balance", label: "Баланс", value: `${issued.balance ?? 0} B` }
         ],
-        // В primaryField теперь название карты, а не имя клиента
-        primaryFields: [
-          { key: "programName", label: "Карта лояльности", value: tpl.user_facing_name || ORG_NAME },
-        ],
-        // Имя клиента и бонус теперь аккуратно расположены в secondaryFields
+
+        // primaryFields ПУСТЫЕ (не хотим больших заголовков поверх cover)
+        primaryFields: [],
+
+        // secondary — только «Гость»
         secondaryFields: [
-          { key: "holder", label: "Гость", value: issued.guest_name || "Клиент" },
-          ...(tpl.bonus_percent_field ? [{ key: "bonus", label: "Бонус", value: `${tpl.bonus_percent_field}%` }] : []),
+          { key: "holder", label: "Гость", value: issued.guest_name || "Клиент" }
         ],
+
+        // auxiliary — только «Бонус %»
         auxiliaryFields: [
-          { key: "email", label: "Email", value: issued.email || "-" },
-          { key: "phone", label: "Телефон", value: issued.phone || "-" },
+          { key: "bonus", label: "Бонус", value: `${Number(tpl.bonus_percent_field || 0)}%` }
         ],
+
+        // Оборотка — бизнес-инфа
         backFields: [
-          ...(tpl.description ? [{ key: "desc", label: "Описание", value: tpl.description }] : []),
-          ...(tpl.website_url ? [{ key: "site", label: "Сайт", value: tpl.website_url }] : []),
-          ...(tpl.contact_email ? [{ key: "support", label: "Поддержка", value: tpl.contact_email }] : []),
+          ...(tpl.description    ? [{ key: "desc",   label: "Описание",  value: tpl.description }] : []),
+          ...(tpl.website_url    ? [{ key: "site",   label: "Сайт",       value: tpl.website_url }] : []),
+          ...(tpl.contact_email  ? [{ key: "email",  label: "Email",      value: tpl.contact_email }] : []),
+          ...(tpl.contact_phone  ? [{ key: "phone",  label: "Телефон",    value: tpl.contact_phone }] : []),
         ],
       },
     };
@@ -228,18 +230,16 @@ module.exports = async (req, res) => {
     const assetsDir = path.join(process.cwd(), "backend", "pass-assets");
     for (const name of ["icon.png", "icon@2x.png"]) {
       const p = path.join(assetsDir, name);
-      if (fs.existsSync(p)) {
-        pass.addBuffer(name, fs.readFileSync(p));
-      }
+      if (fs.existsSync(p)) pass.addBuffer(name, fs.readFileSync(p));
     }
 
     // Optional assets from template
     const logoBuf = await fetchBuffer(tpl.logo_url);
     if (logoBuf) pass.addBuffer("logo.png", logoBuf);
-    
-    // ВАЖНО: Это код для загрузки обложки. Он сработает, если cover_url не пустой
+
+    // Cover → как фон, без текста поверх
     const coverBuf = await fetchBuffer(tpl.cover_url);
-    if (coverBuf) pass.addBuffer("strip.png", coverBuf); // Для storeCard лучше использовать strip.png
+if (coverBuf) pass.addBuffer("strip.png", coverBuf);
 
     // ---------- Barcode / QR ----------
     const payload = issued.qr_value || uuid;
