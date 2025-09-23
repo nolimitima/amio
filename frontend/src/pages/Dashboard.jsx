@@ -272,8 +272,8 @@ const Dashboard = () => {
     }
   };
 
-  // Предпросмотр карты (front/back)
-  const cardPreview = (
+// И ЗАМЕНИТЕ ЕГО НА ЭТОТ
+const cardPreview = (
     <div className="w-[340px] h-[480px] rounded-2xl shadow-lg flex flex-col overflow-hidden relative" style={{ background: bgColor }}>
       {/* Верхняя панель: логотип слева, баланс справа */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
@@ -311,20 +311,25 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-      {/* QR-код */}
-      <div className="bg-white rounded-lg p-2 flex justify-center">
-        <Barcode 
-          value={placeholderUser[qrValue] || qrValue || 'example-uuid'} 
-          format="CODE128"
-          width={1.5}
-          height={40}
-          displayValue={true}
-          fontSize={10}
-          background="transparent"
-        />
+
+      {/* 👇 ЭТОТ БЛОК БЫЛ ВОССТАНОВЛЕН */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-4">
+        <div className="bg-white rounded-lg w-full max-w-xs p-3 flex flex-col items-center">
+          <Barcode 
+            value={placeholderUser[qrValue] || qrValue || 'example-uuid'} 
+            format="CODE128"
+            width={1.8}
+            height={55}
+            displayValue={false}
+            background="transparent"
+          />
+        </div>
+        <div className="mt-2 text-xs text-center" style={{ color: valueColor }}>
+          {placeholderUser[qrValue] || qrValue || ''}
+        </div>
       </div>
-    </div>
-  );
+    </div> // 👈 И ВОТ ЭТОТ ЗАКРЫВАЮЩИЙ ТЕГ БЫЛ ПОТЕРЯН
+);
 
   // Функция для выдачи карты
   const handleIssueCard = async (card) => {
