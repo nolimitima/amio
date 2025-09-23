@@ -7,6 +7,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.55.0",
     "passkit-generator": "^3.4.0",
+    "react-barcode": "^1.6.1",
     "vercel": "^48.0.1"
   }
 }

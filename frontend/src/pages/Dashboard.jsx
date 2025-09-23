@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import headerLogo from '../assets/logo-white.png';
 import { useAuth } from '../context/AuthContext.jsx';
-import QRCode from 'react-qr-code';
+import Barcode from 'react-barcode';
 import { supabase } from '../supabaseClient';
 import Settings from './Settings.jsx';
 
@@ -312,40 +312,17 @@ const Dashboard = () => {
         </div>
       )}
       {/* QR-код */}
-      <div className="flex-1 flex flex-col items-center justify-center pb-6">
-        <div className="bg-white rounded-lg p-2">
-          {/* Показываем QR-код или значение (например, номер телефона) */}
-          <div className="flex flex-col items-center">
-            <QRCode value={placeholderUser[qrValue] || qrValue || ''} size={96} />
-            <div className="mt-2 text-xs text-center text-black">
-              {qrValue === 'user.memberId' ? (placeholderUser['user.memberId'] || '') : qrValue === 'user.phone' ? (placeholderUser['user.phone'] || '') : qrValue === 'user.email' ? (placeholderUser['user.email'] || '') : (placeholderUser[qrValue] || '')}
-            </div>
-            <div className="text-[10px] text-gray-500 mt-1 text-center">
-              {qrValue.toLowerCase().includes('phone')
-                ? 'Телефон участника'
-                : qrValue.toLowerCase().includes('email')
-                  ? 'Email участника'
-                  : qrValue.toLowerCase().includes('memberid')
-                    ? 'ID участника'
-                    : qrValue}
-            </div>
-          </div>
-        </div>
+      <div className="bg-white rounded-lg p-2 flex justify-center">
+        <Barcode 
+          value={placeholderUser[qrValue] || qrValue || 'example-uuid'} 
+          format="CODE128"
+          width={1.5}
+          height={40}
+          displayValue={true}
+          fontSize={10}
+          background="transparent"
+        />
       </div>
-      {/* Back preview только если выбран таб Back of Pass */}
-      {createTab === 1 && (
-        <div className="absolute inset-0 bg-white flex flex-col p-6 justify-between z-10 rounded-2xl">
-          <div>
-            <div className="text-xs text-gray-500 mb-2">Обратная сторона</div>
-            <div className="text-sm font-semibold break-words whitespace-pre-line mb-2">{desc || 'Описание карты...'}</div>
-            <div className="text-xs mt-2">
-              {email && <div>Email: {email}</div>}
-              {phone && <div>Телефон: {phone}</div>}
-              {site && <div>Сайт: <a href={site} className="underline text-blue-600" target="_blank" rel="noopener noreferrer">{site}</a></div>}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 

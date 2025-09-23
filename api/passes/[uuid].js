@@ -245,7 +245,7 @@ if (coverBuf) pass.addBuffer("strip.png", coverBuf);
     const payload = issued.qr_value || uuid;
     pass.setBarcodes({
       message: payload,
-      format: "PKBarcodeFormatQR",
+      format: "PKBarcodeFormatCode128",
       altText: uuid,
     });
 
