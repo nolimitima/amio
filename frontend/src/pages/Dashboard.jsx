@@ -313,22 +313,23 @@ const cardPreview = (
       )}
 
       {/* 👇 ЭТОТ БЛОК БЫЛ ВОССТАНОВЛЕН */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-4">
-        <div className="bg-white rounded-lg w-full max-w-xs p-3 flex flex-col items-center">
-          <Barcode 
-            value={placeholderUser[qrValue] || qrValue || 'example-uuid'} 
-            format="CODE128"
-            width={1.8}
-            height={55}
-            displayValue={false}
-            background="transparent"
-          />
-        </div>
-        <div className="mt-2 text-xs text-center" style={{ color: valueColor }}>
-          {placeholderUser[qrValue] || qrValue || ''}
-        </div>
-      </div>
-    </div> // 👈 И ВОТ ЭТОТ ЗАКРЫВАЮЩИЙ ТЕГ БЫЛ ПОТЕРЯН
+     <div className="flex flex-col items-center px-6 pb-4 mt-auto">
+  <div className="bg-white rounded-lg w-3/4 max-w-sm p-2 flex flex-col items-center">
+    <Barcode 
+      value={placeholderUser[qrValue] || qrValue || 'example-uuid'} 
+      format="CODE128"
+      width={1.2}   // было 1.8 → делаем уже
+      height={50}   // немного ниже по высоте
+      displayValue={false}
+      background="transparent"
+    />
+  </div>
+  <div className="mt-1 text-xs text-center" style={{ color: valueColor }}>
+    {placeholderUser[qrValue] || qrValue || ''}
+  </div>
+</div>
+
+    </div> 
 );
 
   // Функция для выдачи карты
