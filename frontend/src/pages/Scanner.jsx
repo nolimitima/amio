@@ -1,7 +1,10 @@
- import React, { useEffect, useRef, useState } from "react";
+// src/pages/Scanner.jsx
+import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const Scanner = () => {
+  const { currentUser } = useAuth();
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [scanning, setScanning] = useState(false);
@@ -14,14 +17,11 @@ const Scanner = () => {
       scannerRef.current = new Html5Qrcode(readerId);
       scannerRef.current
         .start(
-          { facingMode: "environment" }, // камера задняя
+          { facingMode: "environment" },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           async (decodedText) => {
             await handleScan(decodedText);
             stopScanner();
-          },
-          (errMsg) => {
-            // console.log("scan error:", errMsg);
           }
         )
         .catch((err) => {
@@ -30,7 +30,6 @@ const Scanner = () => {
           setScanning(false);
         });
     }
-
     return () => {
       if (scannerRef.current) {
         scannerRef.current.stop().catch(() => {});
@@ -47,7 +46,7 @@ const Scanner = () => {
     setScanning(false);
   };
 
-  const handleScan = async (qrValue) => {
+  const handleScan = async (qrValue, extra = {}) => {
     try {
       setError(null);
       setResult(null);
@@ -55,7 +54,11 @@ const Scanner = () => {
       const res = await fetch("/api/scanner/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qr_value: qrValue }),
+        body: JSON.stringify({
+          qr_value: qrValue,
+          operator_id: currentUser?.id || null,
+          ...extra,
+        }),
       });
 
       const data = await res.json();
@@ -103,25 +106,59 @@ const Scanner = () => {
           value={manual}
           onChange={(e) => setManual(e.target.value)}
         />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 rounded"
-        >
+        <button type="submit" className="bg-blue-600 text-white px-4 rounded">
           OK
         </button>
       </form>
 
-      {error && (
-        <div className="text-red-600 text-sm mb-3">❌ {error}</div>
-      )}
+      {error && <div className="text-red-600 text-sm mb-3">❌ {error}</div>}
 
       {result && (
         <div className="p-3 border rounded bg-green-50">
           <h2 className="font-medium mb-2">✅ Карта найдена</h2>
-          <div><b>Гость:</b> {result.guest_name}</div>
-          <div><b>Баланс:</b> {result.balance} B</div>
-          {result.email && <div><b>Email:</b> {result.email}</div>}
-          {result.phone && <div><b>Телефон:</b> {result.phone}</div>}
+          <div>
+            <b>Гость:</b> {result.guest_name}
+          </div>
+          <div>
+            <b>Баланс:</b> {result.balance} B
+          </div>
+          {result.email && (
+            <div>
+              <b>Email:</b> {result.email}
+            </div>
+          )}
+          {result.phone && (
+            <div>
+              <b>Телефон:</b> {result.phone}
+            </div>
+          )}
+
+          {/* Кнопки списания / начисления */}
+          <div className="flex gap-2 mt-3">
+            <button
+              className="px-3 py-1 rounded bg-red-600 text-white"
+              onClick={() =>
+                handleScan(result.uuid || manual, {
+                  action: "redeem",
+                  amount: 10,
+                })
+              }
+            >
+              −10 B
+            </button>
+
+            <button
+              className="px-3 py-1 rounded bg-blue-600 text-white"
+              onClick={() =>
+                handleScan(result.uuid || manual, {
+                  action: "add_bonus",
+                  amount: 10,
+                })
+              }
+            >
+              +10 B
+            </button>
+          </div>
         </div>
       )}
     </div>

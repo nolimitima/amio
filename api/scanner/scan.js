@@ -2,7 +2,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE;
+const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE;
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -11,52 +11,58 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { qr_value, action, amount } = req.body;
-    if (!qr_value) {
-      return res.status(400).json({ error: 'qr_value (uuid) is required' });
-    }
+    const { qr_value, action, amount, operator_id, location } = req.body || {};
+    if (!qr_value) return res.status(400).json({ error: 'qr_value (uuid) is required' });
 
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+    const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-    // Найти карту
+    // 1) находим карту
     const { data: card, error } = await supabase
       .from('issued_cards')
-      .select('uuid, guest_name, balance, email, phone')
+      .select('uuid, guest_name, balance, email, phone, card_template_id')
       .eq('uuid', qr_value)
       .single();
 
-    if (error || !card) {
-      return res.status(404).json({ error: 'Card not found' });
-    }
+    if (error || !card) return res.status(404).json({ error: 'Card not found' });
 
+    // 2) экшены (опционально)
     let resultCard = card;
-
-    // Если action = redeem → списываем бонусы
-    if (action === 'redeem' && amount > 0) {
-      const newBalance = Math.max(0, card.balance - amount);
-      const { data: updated, error: updError } = await supabase
+    if (action === 'redeem' && Number(amount) > 0) {
+      const newBalance = Math.max(0, Number(card.balance) - Number(amount));
+      const { data: updated, error: updErr } = await supabase
         .from('issued_cards')
         .update({ balance: newBalance })
         .eq('uuid', qr_value)
         .select()
         .single();
-
-      if (updError) throw updError;
+      if (updErr) throw updErr;
+      resultCard = updated;
+    }
+    if (action === 'add_bonus' && Number(amount) > 0) {
+      const newBalance = Number(card.balance) + Number(amount);
+      const { data: updated, error: updErr } = await supabase
+        .from('issued_cards')
+        .update({ balance: newBalance })
+        .eq('uuid', qr_value)
+        .select()
+        .single();
+      if (updErr) throw updErr;
       resultCard = updated;
     }
 
-    // Логирование
+    // 3) лог в scan_logs
     await supabase.from('scan_logs').insert([{
       card_uuid: qr_value,
-      scanned_at: new Date().toISOString(),
-      location: req.headers['x-forwarded-for'] || 'unknown',
       action: action || 'scan',
-      amount: amount || null
+      amount: amount || null,
+      location: location || req.headers['x-forwarded-for'] || 'unknown',
+      operator_id: operator_id || null,
+      result: resultCard
     }]);
 
     return res.status(200).json({ status: 'ok', card: resultCard });
   } catch (err) {
-    console.error('Internal Server Error:', err);
+    console.error('Scan error:', err);
     return res.status(500).json({ error: 'Internal Server Error', detail: err.message });
   }
 };
