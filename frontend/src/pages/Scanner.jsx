@@ -9,10 +9,15 @@ const Scanner = () => {
   const [error, setError] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState("");
+  
+  // ✅ ИЗМЕНЕНИЕ 1: Добавлено новое состояние для отслеживания обновления
+  const [isUpdating, setIsUpdating] = useState(false);
+  
   const readerId = "qr-reader";
   const scannerRef = useRef(null);
 
   useEffect(() => {
+    // Эта логика остается без изменений
     if (scanning) {
       scannerRef.current = new Html5Qrcode(readerId);
       scannerRef.current
@@ -46,11 +51,20 @@ const Scanner = () => {
     setScanning(false);
   };
 
+  // ✅ ИЗМЕНЕНИЕ 2: Функция handleScan теперь не сбрасывает результат при обновлении
   const handleScan = async (qrValue, extra = {}) => {
-    try {
+    const isUpdateAction = extra.action === 'redeem' || extra.action === 'add_bonus';
+
+    // Если это действие обновления, ставим флаг и НЕ сбрасываем результат
+    if (isUpdateAction) {
+      setIsUpdating(true);
+    } else {
+      // А если это новый скан, то сбрасываем все, как и раньше
       setError(null);
       setResult(null);
+    }
 
+    try {
       const res = await fetch("/api/scanner/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -64,9 +78,15 @@ const Scanner = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Ошибка сканирования");
 
+      // Устанавливаем результат с новыми данными от сервера
       setResult(data.card);
     } catch (err) {
       setError(err.message);
+    } finally {
+      // В любом случае убираем флаг обновления
+      if (isUpdateAction) {
+        setIsUpdating(false);
+      }
     }
   };
 
@@ -133,10 +153,11 @@ const Scanner = () => {
             </div>
           )}
 
-          {/* Кнопки списания / начисления */}
+          {/* ✅ ИЗМЕНЕНИЕ 3: Кнопки теперь блокируются и показывают статус загрузки */}
           <div className="flex gap-2 mt-3">
             <button
-              className="px-3 py-1 rounded bg-red-600 text-white"
+              className="px-3 py-1 rounded bg-red-600 text-white disabled:opacity-50"
+              disabled={isUpdating}
               onClick={() =>
                 handleScan(result.uuid || manual, {
                   action: "redeem",
@@ -144,11 +165,12 @@ const Scanner = () => {
                 })
               }
             >
-              −10 B
+              {isUpdating ? '...' : '−10 B'}
             </button>
 
             <button
-              className="px-3 py-1 rounded bg-blue-600 text-white"
+              className="px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-50"
+              disabled={isUpdating}
               onClick={() =>
                 handleScan(result.uuid || manual, {
                   action: "add_bonus",
@@ -156,7 +178,7 @@ const Scanner = () => {
                 })
               }
             >
-              +10 B
+              {isUpdating ? '...' : '+10 B'}
             </button>
           </div>
         </div>
