@@ -6,8 +6,9 @@ import Signup from './pages/Signup.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import CardPreview from './pages/CardPreview.jsx';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
+import Scanner from './pages/Scanner.jsx' // ✅ 1. Импортируем новый компонент
 
-// Компонент для защиты роутов
+// Компонент для защиты роутов (без изменений)
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -25,15 +26,28 @@ const ProtectedRoute = ({ children }) => {
 function AppRoutes() {
   return (
     <Routes>
+      {/* --- Публичные маршруты --- */}
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/card/:id" element={<CardPreview />} />
+      
+      {/* --- Защищенные маршруты --- */}
       <Route 
         path="/dashboard" 
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ✅ 2. Добавляем новый защищенный маршрут для сканера */}
+      <Route 
+        path="/scanner" 
+        element={
+          <ProtectedRoute>
+            <Scanner />
           </ProtectedRoute>
         } 
       />
@@ -52,4 +66,3 @@ function App() {
 }
 
 export default App
-
