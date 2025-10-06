@@ -14,35 +14,24 @@ export default function JoinForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function onChange(e) {
+  const onChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((f) => ({
-      ...f,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  }
+    setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+  };
 
-  // Лёгкая клиентская нормализация телефона (разрешаем цифры, +, пробелы, (), -)
-  function onPhoneChange(e) {
+  const onPhoneChange = (e) => {
     const v = e.target.value.replace(/[^\d+\-\s()]/g, "");
     setForm((f) => ({ ...f, phone: v }));
-  }
+  };
 
   async function submit(e) {
     e.preventDefault();
     setError("");
-    if (!slug) {
-      setError("Ссылка регистрации недействительна.");
-      return;
-    }
-    if (!form.phone.trim()) {
-      setError("Введите номер телефона.");
-      return;
-    }
-    // простая проверка email (необязателен)
+
+    if (!slug) return setError("Ссылка регистрации недействительна.");
+    if (!form.phone.trim()) return setError("Введите номер телефона.");
     if (form.email && !/.+@.+\..+/.test(form.email)) {
-      setError("Неверный формат email.");
-      return;
+      return setError("Неверный формат email.");
     }
 
     setLoading(true);
@@ -72,6 +61,7 @@ export default function JoinForm() {
     <div className="max-w-md mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-4">Подключить карту лояльности</h1>
 
+      {/* noValidate отключает HTML5-валидацию формы */}
       <form onSubmit={submit} noValidate className="space-y-3">
         <input
           type="text"
@@ -81,6 +71,8 @@ export default function JoinForm() {
           placeholder="Имя"
           value={form.full_name}
           onChange={onChange}
+          // на всякий случай снимаем любые унаследованные паттерны
+          pattern=".*"
         />
 
         <input
@@ -93,6 +85,9 @@ export default function JoinForm() {
           required
           value={form.phone}
           onChange={onPhoneChange}
+          // критично: перекрываем любой внешне подмешанный pattern
+          pattern=".*"
+          onInvalid={(e) => e.preventDefault()} // не показывать нативное сообщение
         />
 
         <input
@@ -103,6 +98,8 @@ export default function JoinForm() {
           placeholder="Email (необязательно)"
           value={form.email}
           onChange={onChange}
+          pattern=".*" // чтобы точно не сработал сторонний pattern
+          onInvalid={(e) => e.preventDefault()}
         />
 
         <label className="flex items-center gap-2 text-sm">
@@ -117,8 +114,10 @@ export default function JoinForm() {
 
         {error && <div className="text-red-600 text-sm">{error}</div>}
 
+        {/* formNoValidate — запасной выключатель даже если noValidate где-то потеряется */}
         <button
           type="submit"
+          formNoValidate
           disabled={loading}
           className="bg-black text-white w-full py-2 rounded disabled:opacity-60"
         >
