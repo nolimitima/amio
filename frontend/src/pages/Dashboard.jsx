@@ -6,6 +6,7 @@ import Barcode from 'react-barcode';
 import { supabase } from '../supabaseClient';
 import Settings from './Settings.jsx';
 import ScanLogsList from '../components/ScanLogsList.jsx';
+import RegistrationLinks from './RegistrationLinks.jsx';
 
 const tabs = [
   'Лицевая сторона',
@@ -460,6 +461,16 @@ const cardPreview = (
               >
                 Настройки
               </button>
+              <button
+                onClick={() => setActiveTab('registration')}
+                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${
+                  activeTab === 'registration' 
+                    ? 'bg-[#D1E889] text-[#121E1D]' 
+                    : 'text-[#121E1D] hover:bg-[#D1E889]/20'
+                }`}
+              >
+                Регистрация
+              </button>
             </nav>
           </div>
         </div>
@@ -548,6 +559,11 @@ const cardPreview = (
       <ScanLogsList />
     </div>
   )}
+          {activeTab === 'registration' && (
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-lg border border-white/50">
+              <RegistrationLinks />
+            </div>
+          )}
           {activeTab === 'create' && (
             <form className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-lg border border-white/50 flex gap-8" onSubmit={handleSubmit}>
               <div className="flex-1 min-w-[320px]">
