@@ -1,3 +1,5 @@
+// src/pages/join/JoinForm.jsx
+
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -28,9 +30,29 @@ export default function JoinForm(){
     <div className="max-w-md mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-4">Подключить карту лояльности</h1>
       <form onSubmit={submit} className="space-y-3">
-        <input className="border rounded px-3 py-2 w-full" placeholder="Имя" value={form.full_name} onChange={e=>setForm(f=>({...f, full_name:e.target.value}))}/>
-        <input className="border rounded px-3 py-2 w-full" placeholder="+7 7xx xxx-xx-xx" required value={form.phone} onChange={e=>setForm(f=>({...f, phone:e.target.value}))}/>
-        <input className="border rounded px-3 py-2 w-full" placeholder="Email (необязательно)" value={form.email} onChange={e=>setForm(f=>({...f, email:e.target.value}))}/>
+        <input 
+          className="border rounded px-3 py-2 w-full" 
+          placeholder="Имя" 
+          value={form.full_name} 
+          onChange={e=>setForm(f=>({...f, full_name:e.target.value}))}
+        />
+        {/* ✅ ИЗМЕНЕНИЕ 1: Добавлен type="tel" для телефона */}
+        <input 
+          type="tel" 
+          className="border rounded px-3 py-2 w-full" 
+          placeholder="+7 7xx xxx-xx-xx" 
+          required 
+          value={form.phone} 
+          onChange={e=>setForm(f=>({...f, phone:e.target.value}))}
+        />
+        {/* ✅ ИЗМЕНЕНИЕ 2: Добавлен type="email" для почты */}
+        <input 
+          type="email" 
+          className="border rounded px-3 py-2 w-full" 
+          placeholder="Email (необязательно)" 
+          value={form.email} 
+          onChange={e=>setForm(f=>({...f, email:e.target.value}))}
+        />
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={form.marketing_opt_in} onChange={e=>setForm(f=>({...f, marketing_opt_in:e.target.checked}))}/>
           Получать акции и бонусы
