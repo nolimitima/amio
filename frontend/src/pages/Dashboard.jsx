@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import headerLogo from '../assets/logo-white.png';
 import { useAuth } from '../context/AuthContext.jsx';
-import Barcode from 'react-barcode';
+import QRCode from 'react-qr-code';
 import { supabase } from '../supabaseClient';
 import Settings from './Settings.jsx';
 import ScanLogsList from '../components/ScanLogsList.jsx';
@@ -316,17 +316,10 @@ const cardPreview = (
 
       {/* 👇 ЭТОТ БЛОК БЫЛ ВОССТАНОВЛЕН */}
      <div className="flex flex-col items-center px-6 pb-4 mt-auto">
-  <div className="bg-white rounded-lg w-3/4 max-w-sm p-2 flex flex-col items-center">
-    <Barcode 
-      value={placeholderUser[qrValue] || qrValue || 'example-uuid'} 
-      format="CODE128"
-      width={1.2}   // было 1.8 → делаем уже
-      height={50}   // немного ниже по высоте
-      displayValue={false}
-      background="transparent"
-    />
+  <div className="bg-white p-3 rounded border inline-flex">
+    <QRCode value={(placeholderUser[qrValue] || qrValue) ? `${window.location.origin}/api/passes/${placeholderUser[qrValue] || qrValue}` : ''} size={120} />
   </div>
-  <div className="mt-1 text-xs text-center" style={{ color: valueColor }}>
+  <div className="mt-1 text-xs text-center break-all" style={{ color: valueColor }}>
     {placeholderUser[qrValue] || qrValue || ''}
   </div>
 </div>

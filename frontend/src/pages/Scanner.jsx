@@ -116,7 +116,8 @@ const Scanner = () => {
         </button>
       )}
 
-      <div id={readerId} className="w-full h-64 mb-4 bg-gray-100"></div>
+      <div id={readerId} className="w-full h-64 mb-1 bg-gray-100"></div>
+      <div className="text-xs text-gray-500 mb-3">Наведите камеру на QR-код карты</div>
 
       <form onSubmit={handleManualSubmit} className="flex gap-2 mb-4">
         <input

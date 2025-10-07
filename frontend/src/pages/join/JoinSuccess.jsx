@@ -1,10 +1,12 @@
+import QRCode from "react-qr-code";
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export default function JoinSuccess(){
   const [sp] = useSearchParams();
   const uuid = sp.get('uuid');
-  const passUrl = useMemo(()=> `/api/passes/${uuid}`, [uuid]);
+  const passUrl = useMemo(()=> (uuid ? `/api/passes/${uuid}` : "#"), [uuid]);
+  const fullUrl = useMemo(()=> (uuid ? `${window.location.origin}${passUrl}` : ""), [passUrl]);
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-3">
@@ -13,10 +15,11 @@ export default function JoinSuccess(){
         Add to Apple Wallet
       </a>
       <p className="text-sm text-gray-600">Открой с iPhone (Safari), чтобы добавить в Wallet.</p>
-      <div className="p-3 border rounded text-sm">
-        Если открыл с компьютера — наведи камерой iPhone на этот URL:<br/>
-        <code>{window.location.origin}/api/passes/{uuid}</code>
-      </div>
+      {uuid && (
+        <div className="bg-white p-4 rounded border inline-flex">
+          <QRCode value={fullUrl} size={180} />
+        </div>
+      )}
     </div>
   );
 }

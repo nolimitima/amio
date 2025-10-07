@@ -162,6 +162,9 @@ module.exports = async (req, res) => {
       .single();
     if (e2 || !tpl) return res.status(404).json({ error: "Template not found" });
 
+    // ---------- Barcode payload ----------
+    const payload = issued.qr_value || uuid;
+
     // ---------- pass.json ----------
     const passJson = {
       formatVersion: 1,
@@ -206,6 +209,22 @@ module.exports = async (req, res) => {
           ...(tpl.contact_phone  ? [{ key: "phone",  label: "Телефон",    value: tpl.contact_phone }] : []),
         ],
       },
+
+      // QR codes (both fields for compatibility)
+      barcodes: [
+        {
+          format: "PKBarcodeFormatQR",
+          message: payload,
+          messageEncoding: "iso-8859-1",
+          altText: uuid
+        }
+      ],
+      barcode: {
+        format: "PKBarcodeFormatQR",
+        message: payload,
+        messageEncoding: "iso-8859-1",
+        altText: uuid
+      },
     };
 
     // ---------- CERTS ----------
@@ -242,12 +261,7 @@ module.exports = async (req, res) => {
 if (coverBuf) pass.addBuffer("strip.png", coverBuf);
 
     // ---------- Barcode / QR ----------
-    const payload = issued.qr_value || uuid;
-    pass.setBarcodes({
-      message: payload,
-      format: "PKBarcodeFormatCode128",
-      altText: uuid,
-    });
+    // Already embedded into pass.json above as QR (both barcodes[] and barcode)
 
     // ---------- Build & Send ----------
     const pkpass = pass.getAsBuffer();
