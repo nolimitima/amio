@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import BrandLayout from "../../components/BrandLayout";
 
@@ -6,6 +6,7 @@ export default function JoinForm() {
   const { slug } = useParams();
   const navigate = useNavigate();
 
+  const [branding, setBranding] = useState(null);
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
@@ -15,12 +16,30 @@ export default function JoinForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Загружаем брендинг по slug
+  useEffect(() => {
+    if (!slug) return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/public/branding?slug=${encodeURIComponent(slug)}`);
+        const j = await r.json();
+        setBranding(r.ok ? j : null);
+      } catch (err) {
+        console.error("branding fetch error:", err);
+      }
+    })();
+  }, [slug]);
+
+  // Обработчики формы
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
   };
-  const onPhoneChange = (e) =>
-    setForm((f) => ({ ...f, phone: e.target.value.replace(/[^\d+\-\s()]/g, "") }));
+
+  const onPhoneChange = (e) => {
+    const val = e.target.value.replace(/[^\d+\-\s()]/g, "");
+    setForm((f) => ({ ...f, phone: val }));
+  };
 
   async function submit(e) {
     e.preventDefault();
@@ -35,22 +54,24 @@ export default function JoinForm() {
         body: JSON.stringify({ slug, ...form }),
       });
       const j = await r.json();
-      if (!r.ok) throw new Error(j?.error || "Ошибка");
+      if (!r.ok) throw new Error(j?.error || "Ошибка при создании карты");
       navigate(`/join/success?uuid=${j.uuid}`);
     } catch (err) {
-      setError(err.message || "Ошибка");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <BrandLayout branding={{}}>
+    <BrandLayout branding={branding}>
       <div className="text-center mb-10">
         <h1 className="text-3xl font-semibold mb-2 text-white">
           Подключить карту лояльности
         </h1>
-        <p className="text-white/60">Заполните данные — и добавьте карту в Apple Wallet.</p>
+        <p className="text-white/60">
+          Заполните данные — и добавьте карту в Apple Wallet.
+        </p>
       </div>
 
       <form
@@ -66,6 +87,7 @@ export default function JoinForm() {
           value={form.full_name}
           onChange={onChange}
         />
+
         <input
           type="tel"
           name="phone"
@@ -74,10 +96,11 @@ export default function JoinForm() {
           value={form.phone}
           onChange={onPhoneChange}
         />
+
         <input
           type="email"
           name="email"
-          placeholder="name@example.com"
+          placeholder="name@example.com (необязательно)"
           className="w-full h-12 px-3 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-black/10 outline-none"
           value={form.email}
           onChange={onChange}
