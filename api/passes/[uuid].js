@@ -214,17 +214,15 @@ module.exports = async (req, res) => {
       barcodes: [
         {
           format: "PKBarcodeFormatQR",
-          message: payload,
-          messageEncoding: "iso-8859-1",
-          altText: uuid
+          message: card.uuid,
+          messageEncoding: "iso-8859-1"
         }
       ],
       barcode: {
         format: "PKBarcodeFormatQR",
-        message: payload,
-        messageEncoding: "iso-8859-1",
-        altText: uuid
-      },
+        message: card.uuid,
+        messageEncoding: "iso-8859-1"
+      },      
     };
 
     // ---------- CERTS ----------

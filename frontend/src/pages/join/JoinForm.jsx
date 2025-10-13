@@ -1,24 +1,30 @@
-import { useState } from "react";
+// src/pages/join/JoinForm.jsx
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import BrandLayout from "../../components/BrandLayout";
 
 export default function JoinForm() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const [branding, setBranding] = useState(null);
 
-  const [form, setForm] = useState({
-    full_name: "",
-    phone: "",
-    email: "",
-    marketing_opt_in: true,
-  });
+  const [form, setForm] = useState({ full_name:"", phone:"", email:"", marketing_opt_in:true });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const r = await fetch(`/api/public/branding?slug=${encodeURIComponent(slug)}`);
+      const j = await r.json();
+      if (r.ok) setBranding(j);
+      else setBranding({}); // фолбек
+    })();
+  }, [slug]);
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
   };
-
   const onPhoneChange = (e) => {
     const v = e.target.value.replace(/[^\d+\-\s()]/g, "");
     setForm((f) => ({ ...f, phone: v }));
@@ -27,107 +33,56 @@ export default function JoinForm() {
   async function submit(e) {
     e.preventDefault();
     setError("");
-
-    if (!slug) return setError("Ссылка регистрации недействительна.");
     if (!form.phone.trim()) return setError("Введите номер телефона.");
-    if (form.email && !/.+@.+\..+/.test(form.email)) {
-      return setError("Неверный формат email.");
-    }
-
     setLoading(true);
     try {
       const r = await fetch("/api/public/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug,
-          full_name: form.full_name?.trim(),
-          phone: form.phone?.trim(),
-          email: form.email?.trim() || undefined,
-          marketing_opt_in: !!form.marketing_opt_in,
-        }),
+        method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ slug, ...form }),
       });
       const j = await r.json();
-      if (!r.ok) throw new Error(j?.error || "Ошибка создания карты");
+      if (!r.ok) throw new Error(j?.error || "Ошибка");
       navigate(`/join/success?uuid=${j.uuid}`);
-    } catch (err) {
-      setError(err.message || "Ошибка. Попробуйте позже.");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message || "Ошибка"); } finally { setLoading(false); }
   }
 
   return (
-    <div className="max-w-md mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4">Подключить карту лояльности</h1>
+    <BrandLayout branding={branding}>
+      <div className="mx-auto max-w-lg">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-semibold">Подключить карту лояльности</h1>
+          <p className="text-neutral-600 mt-2">Заполните данные — и добавьте карту в Apple Wallet.</p>
+        </div>
 
-      {/* noValidate отключает HTML5-валидацию формы */}
-      <form onSubmit={submit} noValidate className="space-y-3">
-        <input
-          type="text"
-          name="full_name"
-          autoComplete="name"
-          className="border rounded px-3 py-2 w-full"
-          placeholder="Имя"
-          value={form.full_name}
-          onChange={onChange}
-          // на всякий случай снимаем любые унаследованные паттерны
-          pattern=".*"
-        />
-
-        <input
-          type="tel"
-          name="phone"
-          inputMode="tel"
-          autoComplete="tel"
-          className="border rounded px-3 py-2 w-full"
-          placeholder="+7 7xx xxx-xx-xx или 8XXXXXXXXXX"
-          required
-          value={form.phone}
-          onChange={onPhoneChange}
-          // критично: перекрываем любой внешне подмешанный pattern
-          pattern=".*"
-          onInvalid={(e) => e.preventDefault()} // не показывать нативное сообщение
-        />
-
-        <input
-          type="email"
-          name="email"
-          autoComplete="email"
-          className="border rounded px-3 py-2 w-full"
-          placeholder="Email (необязательно)"
-          value={form.email}
-          onChange={onChange}
-          pattern=".*" // чтобы точно не сработал сторонний pattern
-          onInvalid={(e) => e.preventDefault()}
-        />
-
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            name="marketing_opt_in"
-            checked={form.marketing_opt_in}
-            onChange={onChange}
-          />
-          Получать акции и бонусы
-        </label>
-
-        {error && <div className="text-red-600 text-sm">{error}</div>}
-
-        {/* formNoValidate — запасной выключатель даже если noValidate где-то потеряется */}
-        <button
-          type="submit"
-          formNoValidate
-          disabled={loading}
-          className="bg-black text-white w-full py-2 rounded disabled:opacity-60"
-        >
-          {loading ? "Создаём…" : "Получить карту"}
-        </button>
-
-        <p className="text-xs text-gray-500">
-          Откройте ссылку на iPhone (Safari), чтобы добавить карту в Wallet.
-        </p>
-      </form>
-    </div>
+        <form onSubmit={submit} noValidate className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+          <div className="space-y-1">
+            <label className="text-sm text-neutral-600">Имя</label>
+            <input type="text" name="full_name" className="w-full h-11 px-3 rounded-xl border"
+              placeholder="Например: Тимур" value={form.full_name} onChange={onChange} pattern=".*"/>
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm text-neutral-600">Телефон</label>
+            <input type="tel" name="phone" inputMode="tel" autoComplete="tel"
+              className="w-full h-11 px-3 rounded-xl border" placeholder="+7 7xx xxx-xx-xx или 8XXXXXXXXXX"
+              required value={form.phone} onChange={onPhoneChange} pattern=".*" onInvalid={(e)=>e.preventDefault()}/>
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm text-neutral-600">Email (необязательно)</label>
+            <input type="email" name="email" className="w-full h-11 px-3 rounded-xl border"
+              placeholder="name@example.com" value={form.email} onChange={onChange} pattern=".*" onInvalid={(e)=>e.preventDefault()}/>
+          </div>
+          <label className="flex items-start gap-3 text-sm text-neutral-700">
+            <input type="checkbox" name="marketing_opt_in" checked={form.marketing_opt_in} onChange={onChange}
+              className="mt-1 h-4 w-4 rounded border"/>
+            Хочу получать бонусы и акции
+          </label>
+          {error && <div className="text-red-600 text-sm">{error}</div>}
+          <button type="submit" formNoValidate disabled={loading}
+            className="w-full h-12 rounded-xl bg-black text-white font-medium hover:opacity-90 active:opacity-80 disabled:opacity-60">
+            {loading ? "Создаём…" : "Получить карту"}
+          </button>
+        </form>
+      </div>
+    </BrandLayout>
   );
 }
