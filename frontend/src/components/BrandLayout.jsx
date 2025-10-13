@@ -1,32 +1,56 @@
-// src/components/BrandLayout.jsx
 export default function BrandLayout({ children, branding }) {
     const brand = {
-      name: branding?.name || "Card",
-      primary: branding?.primary || "#D1E889",
-      bg: branding?.bg || "#F6F5F3",
+      name: branding?.name || "Example",
       logoUrl: branding?.logoUrl || "/logo-amian.svg",
+      primary: branding?.primary || "#D1E889",
+      bg: branding?.bg || "#0E1411",      // глубокий фон, ближе к Badge
+      surface: branding?.surface || "#FFFFFF",
+      text: branding?.text || "#F8FAF9",
     };
   
     return (
-      <div className="min-h-screen" style={{ background: brand.bg }}>
-        <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
-          <div className="mx-auto max-w-3xl px-4 h-14 flex items-center justify-between">
+      <div
+        className="min-h-screen flex flex-col justify-between font-sans"
+        style={{ background: brand.bg, color: brand.text }}
+      >
+        {/* HEADER */}
+        <header className="w-full border-b border-white/10 bg-white/5 backdrop-blur-sm">
+          <div className="max-w-2xl mx-auto px-5 h-14 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <img src={brand.logoUrl} alt="Logo" className="h-6 w-6 rounded" />
-              <span className="font-medium">{brand.name}</span>
+              <img
+                src={brand.logoUrl}
+                alt="Logo"
+                className="h-5 w-5 rounded-sm"
+                style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.3))" }}
+              />
+              <span className="text-sm font-medium tracking-wide opacity-90">
+                {brand.name}
+              </span>
             </div>
-            <span className="text-xs px-2 py-1 rounded-full" style={{ background: brand.primary + "33" }}>
+            <span
+              className="text-[11px] px-2 py-1 rounded-full font-medium"
+              style={{
+                background: brand.primary + "26",
+                color: brand.primary,
+              }}
+            >
               Secure Join
             </span>
           </div>
         </header>
   
-        <main className="mx-auto max-w-3xl px-4 py-10">{children}</main>
+        {/* MAIN CONTENT */}
+        <main className="flex-1 w-full max-w-2xl mx-auto px-5 py-10">
+          {children}
+        </main>
   
-        <footer className="mt-10 border-t">
-          <div className="mx-auto max-w-3xl px-4 py-6 text-xs text-neutral-500 flex items-center justify-between">
+        {/* FOOTER */}
+        <footer className="w-full border-t border-white/10 bg-white/5 backdrop-blur-sm">
+          <div className="max-w-2xl mx-auto px-5 py-5 flex items-center justify-between text-xs text-white/40">
             <span>© {new Date().getFullYear()} {brand.name}</span>
-            <span>made with <strong>Amian</strong></span>
+            <span>
+              made with <span className="text-white/60 font-medium">Amian</span>
+            </span>
           </div>
         </footer>
       </div>
