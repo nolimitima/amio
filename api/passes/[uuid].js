@@ -146,16 +146,18 @@ module.exports = async (req, res) => {
     if (!uuid) return res.status(400).json({ error: "Missing uuid" });
 
     // ---------- DB READ ----------
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+    const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-    const { data: issued, error: e1 } = await supabase
+    const { data: issued, error: e1 } = await supa
       .from("issued_cards")
       .select("uuid, guest_name, email, phone, balance, qr_value, card_template_id")
       .eq("uuid", uuid)
       .single();
     if (e1 || !issued) return res.status(404).json({ error: "Card not found" });
 
-    const { data: tpl, error: e2 } = await supabase
+    const serial = issued.uuid;
+
+    const { data: tpl, error: e2 } = await supa
       .from("card_templates")
       .select("user_facing_name, logo_url, cover_url, bg_color, label_color, value_color, description, contact_email, contact_phone, website_url, bonus_percent_field")
       .eq("id", issued.card_template_id)
@@ -214,13 +216,13 @@ module.exports = async (req, res) => {
       barcodes: [
         {
           format: "PKBarcodeFormatQR",
-          message: card.uuid,
+          message: serial,
           messageEncoding: "iso-8859-1"
         }
       ],
       barcode: {
         format: "PKBarcodeFormatQR",
-        message: card.uuid,
+        message: serial,
         messageEncoding: "iso-8859-1"
       },      
     };
@@ -269,7 +271,7 @@ if (coverBuf) pass.addBuffer("strip.png", coverBuf);
     return res.status(200).send(pkpass);
 
   } catch (err) {
-    console.error("PKPASS error:", err);
+    console.error("passes/[uuid] error:", err);
     return res.status(500).json({ error: "Failed to generate pass", detail: String(err?.message || err) });
   }
 };
