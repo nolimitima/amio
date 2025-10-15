@@ -2,9 +2,13 @@
 // Vercel Serverless Function (Node.js 20+)
 
 const { createClient } = require('@supabase/supabase-js');
+const https = require('https');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE; // service role key
+const PASSKIT_APNS_P12_BASE64 = process.env.PASSKIT_APNS_P12_BASE64;
+const PASSKIT_APNS_P12_PASSWORD = process.env.PASSKIT_APNS_P12_PASSWORD;
+const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER;
 
 function getClientIp(req) {
   return (
@@ -13,6 +17,59 @@ function getClientIp(req) {
     req.socket?.remoteAddress ||
     'unknown'
   );
+}
+
+// Хелпер для отправки push-уведомлений в Apple Wallet
+async function sendPasskitPush(serialNumber) {
+  try {
+    if (!PASSKIT_APNS_P12_BASE64 || !PASSKIT_APNS_P12_PASSWORD || !PASS_TYPE_IDENTIFIER) {
+      console.log('PassKit push notifications not configured, skipping...');
+      return;
+    }
+
+    const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+    const { data: devices } = await supa
+      .from("pass_devices")
+      .select("push_token")
+      .eq("serial_number", serialNumber);
+
+    if (!devices?.length) {
+      console.log(`No registered devices found for card ${serialNumber}`);
+      return;
+    }
+
+    const p12 = Buffer.from(PASSKIT_APNS_P12_BASE64, "base64");
+    const agent = new https.Agent({ 
+      pfx: p12, 
+      passphrase: PASSKIT_APNS_P12_PASSWORD 
+    });
+
+    for (const device of devices) {
+      const req = https.request({
+        method: "POST",
+        host: "api.push.apple.com",
+        port: 443,
+        path: `/3/device/${device.push_token}`,
+        headers: { 
+          "apns-topic": PASS_TYPE_IDENTIFIER,
+          "apns-priority": "10",
+          "apns-expiration": "0"
+        },
+        agent
+      });
+
+      req.on('error', (err) => {
+        console.error(`Push notification error for device ${device.push_token}:`, err);
+      });
+
+      req.write("{}");
+      req.end();
+    }
+
+    console.log(`Sent push notifications to ${devices.length} devices for card ${serialNumber}`);
+  } catch (err) {
+    console.error('sendPasskitPush error:', err);
+  }
 }
 
 module.exports = async (req, res) => {
@@ -62,6 +119,8 @@ module.exports = async (req, res) => {
 
     // 2) применяем действие (если есть)
     let resultCard = card;
+    let balanceChanged = false;
+    
     if (normalizedAction === 'redeem' && amt > 0) {
       const newBalance = Math.max(0, Number(card.balance) - amt);
       const { data: updated, error: updErr } = await supabase
@@ -72,6 +131,7 @@ module.exports = async (req, res) => {
         .single();
       if (updErr) throw updErr;
       resultCard = updated;
+      balanceChanged = true;
     } else if (normalizedAction === 'add_bonus' && amt > 0) {
       const newBalance = Number(card.balance) + amt;
       const { data: updated, error: updErr } = await supabase
@@ -82,6 +142,7 @@ module.exports = async (req, res) => {
         .single();
       if (updErr) throw updErr;
       resultCard = updated;
+      balanceChanged = true;
     }
 
     // 3) пишем лог
@@ -106,7 +167,15 @@ module.exports = async (req, res) => {
 
     const log_id = Array.isArray(logRows) && logRows[0]?.id ? logRows[0].id : null;
 
-    // 4) ответ
+    // 4) отправляем push-уведомление если баланс изменился
+    if (balanceChanged) {
+      // Не ждем завершения push-уведомления, чтобы не замедлять ответ
+      sendPasskitPush(qr_value).catch(err => {
+        console.error('Failed to send push notification:', err);
+      });
+    }
+
+    // 5) ответ
     return res.status(200).json({
       status: 'ok',
       card: resultCard,

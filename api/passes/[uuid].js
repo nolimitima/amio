@@ -24,6 +24,7 @@ const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER; // напр. "pas
 const TEAM_IDENTIFIER = process.env.TEAM_IDENTIFIER;           // Apple Team ID
 const ORG_NAME = process.env.ORG_NAME || "Amian";
 const WWDR_CERT_BASE64 = process.env.WWDR_CERT_BASE64;         // (строка PEM ИЛИ base64(PEM/DER))
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL;           // Base URL for webServiceURL
 
 // Guards
 if (!SUPABASE_URL) throw new Error("SUPABASE_URL missing");
@@ -32,11 +33,21 @@ if (!PASS_P12_BASE64) throw new Error("PASS_P12_BASE64 missing");
 if (!PASS_TYPE_IDENTIFIER) throw new Error("PASS_TYPE_IDENTIFIER missing");
 if (!TEAM_IDENTIFIER) throw new Error("TEAM_IDENTIFIER missing");
 if (!WWDR_CERT_BASE64) throw new Error("WWDR_CERT_BASE64 missing");
+if (!PUBLIC_BASE_URL) throw new Error("PUBLIC_BASE_URL missing");
 
 // =============== UTILS ===============
 const hex2rgb = (hex) => {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
   return m ? `rgb(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)})` : undefined;
+};
+
+const generateAuthToken = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 32; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 };
 
 function derToPemCertString(derBuf) {
@@ -150,10 +161,23 @@ module.exports = async (req, res) => {
 
     const { data: issued, error: e1 } = await supa
       .from("issued_cards")
-      .select("uuid, guest_name, email, phone, balance, qr_value, card_template_id")
+      .select("uuid, guest_name, email, phone, balance, qr_value, card_template_id, auth_token")
       .eq("uuid", uuid)
       .single();
     if (e1 || !issued) return res.status(404).json({ error: "Card not found" });
+
+    // Генерируем auth_token если его нет
+    let authToken = issued.auth_token;
+    if (!authToken) {
+      authToken = generateAuthToken();
+      const { error: updateError } = await supa
+        .from("issued_cards")
+        .update({ auth_token: authToken })
+        .eq("uuid", uuid);
+      if (updateError) {
+        console.error("Failed to update auth_token:", updateError);
+      }
+    }
 
     const serial = issued.uuid;
 
@@ -175,6 +199,10 @@ module.exports = async (req, res) => {
       organizationName: ORG_NAME,
       description: tpl.user_facing_name || "Digital Card",
       serialNumber: uuid,
+
+      // Web service для push-обновлений
+      webServiceURL: `${PUBLIC_BASE_URL}/api/passkit/v1`,
+      authenticationToken: authToken,
 
       // Название рядом с логотипом
       logoText: tpl.user_facing_name || ORG_NAME,
