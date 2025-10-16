@@ -19,8 +19,7 @@ function getClientIp(req) {
   );
 }
 
-// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ
-// Хелпер для отправки push-уведомлений в Apple Wallet
+// Хелпер для отправки push-уведомлений в Apple Wallet (по таблице pass_devices)
 async function sendPasskitPush(serialNumber) {
   try {
     if (!PASSKIT_APNS_P12_BASE64 || !PASSKIT_APNS_P12_PASSWORD || !PASS_TYPE_IDENTIFIER) {
@@ -29,50 +28,43 @@ async function sendPasskitPush(serialNumber) {
     }
 
     const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-    
-    // ИСПРАВЛЕНО: Ищем токен в таблице 'issued_cards', а не 'pass_devices'
-    const { data: card, error: cardError } = await supa
-      .from("issued_cards")
-      .select("push_token")
-      .eq("uuid", serialNumber) // serialNumber - это и есть uuid карты
-      .single();
 
-    // ИСПРАВЛЕНО: Проверяем, что токен существует на найденной карте
-    if (cardError || !card?.push_token) {
-      console.log(`No registered device found for card ${serialNumber}`);
+    // Ищем все устройства, зарегистрированные для этой карты, в таблице pass_devices
+    const { data: devices, error: devicesError } = await supa
+      .from("pass_devices")
+      .select("push_token")
+      .eq("serial_number", serialNumber);
+
+    if (devicesError || !devices || devices.length === 0) {
+      console.log(`No registered devices found for card ${serialNumber}`);
       return;
     }
 
-    const pushToken = card.push_token;
-
     const p12 = Buffer.from(PASSKIT_APNS_P12_BASE64, "base64");
-    const agent = new https.Agent({ 
-      pfx: p12, 
-      passphrase: PASSKIT_APNS_P12_PASSWORD 
+    const agent = new https.Agent({
+      pfx: p12,
+      passphrase: PASSKIT_APNS_P12_PASSWORD
     });
 
-    // ИСПРАВЛЕНО: Убран цикл, так как у карты только один push_token
-    const req = https.request({
-      method: "POST",
-      host: "api.push.apple.com", // Для продакшена. Для тестов - api.sandbox.push.apple.com
-      port: 443,
-      path: `/3/device/${pushToken}`,
-      headers: { 
-        "apns-topic": PASS_TYPE_IDENTIFIER,
-        "apns-priority": "10",
-        "apns-expiration": "0"
-      },
-      agent
-    });
+    // Отправляем уведомление на каждое зарегистрированное устройство
+    for (const device of devices) {
+      const req = https.request({
+        method: "POST",
+        host: "api.push.apple.com",
+        port: 443,
+        path: `/3/device/${device.push_token}`,
+        headers: {
+          "apns-topic": PASS_TYPE_IDENTIFIER,
+          "apns-priority": "10",
+        },
+        agent
+      });
+      req.on('error', (err) => console.error(`Push error for ${device.push_token}:`, err));
+      req.write(JSON.stringify({ aps: {} }));
+      req.end();
+    }
 
-    req.on('error', (err) => {
-      console.error(`Push notification error for device ${pushToken}:`, err);
-    });
-
-    req.write(JSON.stringify({ aps: {} })); // Apple требует непустое тело запроса
-    req.end();
-
-    console.log(`Sent push notification to device ${pushToken} for card ${serialNumber}`);
+    console.log(`Sent push notifications to ${devices.length} devices for card ${serialNumber}`);
   } catch (err) {
     console.error('sendPasskitPush error:', err);
   }
