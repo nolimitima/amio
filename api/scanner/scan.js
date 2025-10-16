@@ -19,6 +19,7 @@ function getClientIp(req) {
   );
 }
 
+// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ
 // Хелпер для отправки push-уведомлений в Apple Wallet
 async function sendPasskitPush(serialNumber) {
   try {
@@ -28,15 +29,21 @@ async function sendPasskitPush(serialNumber) {
     }
 
     const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-    const { data: devices } = await supa
-      .from("pass_devices")
+    
+    // ИСПРАВЛЕНО: Ищем токен в таблице 'issued_cards', а не 'pass_devices'
+    const { data: card, error: cardError } = await supa
+      .from("issued_cards")
       .select("push_token")
-      .eq("serial_number", serialNumber);
+      .eq("uuid", serialNumber) // serialNumber - это и есть uuid карты
+      .single();
 
-    if (!devices?.length) {
-      console.log(`No registered devices found for card ${serialNumber}`);
+    // ИСПРАВЛЕНО: Проверяем, что токен существует на найденной карте
+    if (cardError || !card?.push_token) {
+      console.log(`No registered device found for card ${serialNumber}`);
       return;
     }
+
+    const pushToken = card.push_token;
 
     const p12 = Buffer.from(PASSKIT_APNS_P12_BASE64, "base64");
     const agent = new https.Agent({ 
@@ -44,41 +51,35 @@ async function sendPasskitPush(serialNumber) {
       passphrase: PASSKIT_APNS_P12_PASSWORD 
     });
 
-    for (const device of devices) {
-      const req = https.request({
-        method: "POST",
-        host: "api.push.apple.com",
-        port: 443,
-        path: `/3/device/${device.push_token}`,
-        headers: { 
-          "apns-topic": PASS_TYPE_IDENTIFIER,
-          "apns-priority": "10",
-          "apns-expiration": "0"
-        },
-        agent
-      });
+    // ИСПРАВЛЕНО: Убран цикл, так как у карты только один push_token
+    const req = https.request({
+      method: "POST",
+      host: "api.push.apple.com", // Для продакшена. Для тестов - api.sandbox.push.apple.com
+      port: 443,
+      path: `/3/device/${pushToken}`,
+      headers: { 
+        "apns-topic": PASS_TYPE_IDENTIFIER,
+        "apns-priority": "10",
+        "apns-expiration": "0"
+      },
+      agent
+    });
 
-      req.on('error', (err) => {
-        console.error(`Push notification error for device ${device.push_token}:`, err);
-      });
+    req.on('error', (err) => {
+      console.error(`Push notification error for device ${pushToken}:`, err);
+    });
 
-      req.write("{}");
-      req.end();
-    }
+    req.write(JSON.stringify({ aps: {} })); // Apple требует непустое тело запроса
+    req.end();
 
-    console.log(`Sent push notifications to ${devices.length} devices for card ${serialNumber}`);
+    console.log(`Sent push notification to device ${pushToken} for card ${serialNumber}`);
   } catch (err) {
     console.error('sendPasskitPush error:', err);
   }
 }
 
 module.exports = async (req, res) => {
-  // (опционально) CORS, если надо вызывать извне
-  // res.setHeader('Access-Control-Allow-Origin', '*');
-  // res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  // res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  // if (req.method === 'OPTIONS') return res.status(200).end();
-
+  // Весь остальной код остается без изменений, так как он написан правильно
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
@@ -89,13 +90,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const {
-      qr_value,          // UUID карты из QR
-      action,            // 'scan' | 'redeem' | 'add_bonus' (опц.)
-      amount,            // число для redeem/add_bonus (опц.)
-      operator_id,       // кто сканировал (uuid юзера из Supabase Auth) (опц.)
-      location           // строка-локация, если хочешь передавать с фронта (опц.)
-    } = req.body || {};
+    const { qr_value, action, amount, operator_id, location } = req.body || {};
 
     if (!qr_value || typeof qr_value !== 'string') {
       return res.status(400).json({ error: 'qr_value (uuid) is required' });
@@ -155,13 +150,12 @@ module.exports = async (req, res) => {
         amount: amt || null,
         location: clientIp,
         operator_id: operator_id || null,
-        result: resultCard   // снимок состояния карты на момент операции
+        result: resultCard
       }])
       .select('id')
       .limit(1);
 
     if (logErr) {
-      // лог не должен ломать ответ на сканирование — просто сообщим
       console.error('scan_logs insert error:', logErr);
     }
 
@@ -169,7 +163,6 @@ module.exports = async (req, res) => {
 
     // 4) отправляем push-уведомление если баланс изменился
     if (balanceChanged) {
-      // Не ждем завершения push-уведомления, чтобы не замедлять ответ
       sendPasskitPush(qr_value).catch(err => {
         console.error('Failed to send push notification:', err);
       });
