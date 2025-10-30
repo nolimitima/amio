@@ -2,12 +2,11 @@
 // Vercel Serverless Function (Node.js 20+)
 
 const { createClient } = require('@supabase/supabase-js');
-const https = require('https');
+const apnProvider = require('../../lib/apn');
+const apn = require('node-apn');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE; // service role key
-const PASSKIT_APNS_P12_BASE64 = process.env.PASSKIT_APNS_P12_BASE64;
-const PASSKIT_APNS_P12_PASSWORD = process.env.PASSKIT_APNS_P12_PASSWORD;
 const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER;
 
 function getClientIp(req) {
@@ -19,52 +18,39 @@ function getClientIp(req) {
   );
 }
 
-// Хелпер для отправки push-уведомлений в Apple Wallet (по таблице pass_devices)
+// Хелпер: отправить пустой PassKit push всем токенам для serialNumber
 async function sendPasskitPush(serialNumber) {
   try {
-    if (!PASSKIT_APNS_P12_BASE64 || !PASSKIT_APNS_P12_PASSWORD || !PASS_TYPE_IDENTIFIER) {
-      console.log('PassKit push notifications not configured, skipping...');
+    if (!PASS_TYPE_IDENTIFIER) {
+      console.log('PassKit topic not configured, skipping...');
       return;
     }
 
     const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-
-    // Ищем все устройства, зарегистрированные для этой карты, в таблице pass_devices
     const { data: devices, error: devicesError } = await supa
-      .from("pass_devices")
-      .select("push_token")
-      .eq("serial_number", serialNumber);
+      .from('pass_devices')
+      .select('push_token')
+      .eq('serial_number', serialNumber);
 
     if (devicesError || !devices || devices.length === 0) {
       console.log(`No registered devices found for card ${serialNumber}`);
       return;
     }
 
-    const p12 = Buffer.from(PASSKIT_APNS_P12_BASE64, "base64");
-    const agent = new https.Agent({
-      pfx: p12,
-      passphrase: PASSKIT_APNS_P12_PASSWORD
-    });
+    const tokens = devices.map(d => d.push_token).filter(Boolean);
+    if (tokens.length === 0) return;
 
-    // Отправляем уведомление на каждое зарегистрированное устройство
-    for (const device of devices) {
-      const req = https.request({
-        method: "POST",
-        host: "api.push.apple.com",
-        port: 443,
-        path: `/3/device/${device.push_token}`,
-        headers: {
-          "apns-topic": PASS_TYPE_IDENTIFIER,
-          "apns-priority": "10",
-        },
-        agent
-      });
-      req.on('error', (err) => console.error(`Push error for ${device.push_token}:`, err));
-      req.write(JSON.stringify({ aps: {} }));
-      req.end();
+    const notification = new apn.Notification();
+    notification.topic = PASS_TYPE_IDENTIFIER;
+    notification.payload = {}; // пустой payload
+
+    const response = await apnProvider.send(notification, tokens);
+    if (response?.failed?.length) {
+      console.error('APN Push Failed:', response.failed);
     }
-
-    console.log(`Sent push notifications to ${devices.length} devices for card ${serialNumber}`);
+    if (response?.sent?.length) {
+      console.log(`APN Push Sent to ${response.sent.length} device(s) for card ${serialNumber}`);
+    }
   } catch (err) {
     console.error('sendPasskitPush error:', err);
   }

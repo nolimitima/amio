@@ -1,87 +1,82 @@
-// /api/passkit/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/[serialNumber].js
+// /api/passkit/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier].js
 const { createClient } = require("@supabase/supabase-js");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE;
+const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER;
+
+function parseAuthHeader(h) {
+  if (!h || !h.startsWith('ApplePass ')) return null;
+  return h.substring('ApplePass '.length).trim();
+}
 
 module.exports = async (req, res) => {
   try {
-    const { deviceLibraryIdentifier, passTypeIdentifier, serialNumber } = req.query;
-    
-    if (!deviceLibraryIdentifier || !passTypeIdentifier || !serialNumber) {
-      return res.status(400).json({ error: "Missing required parameters" });
+    const { deviceLibraryIdentifier, passTypeIdentifier } = req.query;
+
+    if (!deviceLibraryIdentifier || !passTypeIdentifier) {
+      return res.status(400).end();
+    }
+
+    if (passTypeIdentifier !== PASS_TYPE_IDENTIFIER) {
+      return res.status(404).end();
+    }
+
+    if (req.method !== 'GET') {
+      res.setHeader('Allow', ['GET']);
+      return res.status(405).end();
+    }
+
+    const authToken = parseAuthHeader(req.headers.authorization || '');
+    if (!authToken) {
+      return res.status(401).end();
     }
 
     const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-    // Проверка авторизации остается без изменений
-    const authHeader = req.headers.authorization || "";
-    const authToken = authHeader.replace(/^ApplePass\s+/i, "").trim();
-    if (!authToken) {
-      return res.status(401).json({ error: "Invalid authorization header" });
+    // Список всех серий, зарегистрированных на устройстве
+    const { data: devices, error: devErr } = await supa
+      .from('pass_devices')
+      .select('serial_number')
+      .eq('device_library_identifier', deviceLibraryIdentifier)
+      .eq('pass_type_identifier', passTypeIdentifier);
+    if (devErr) {
+      console.error('list registrations error:', devErr);
+      return res.status(500).end();
+    }
+    if (!devices || devices.length === 0) {
+      return res.status(204).end();
     }
 
-    const { data: card, error: cardError } = await supa
-      .from("issued_cards")
-      .select("uuid, auth_token")
-      .eq("uuid", serialNumber)
-      .eq("auth_token", authToken)
-      .single();
-
-    if (cardError || !card) {
-      return res.status(401).json({ error: "Invalid authentication token" });
+    const serialNumbers = devices.map(d => d.serial_number).filter(Boolean);
+    if (serialNumbers.length === 0) {
+      return res.status(204).end();
     }
 
-    // ✅ ИЗМЕНЕНИЕ ЗДЕСЬ: Ожидаем POST вместо PUT
-    if (req.method === "POST") {
-      const pushToken = req.body?.pushToken;
-      if (!pushToken) {
-        return res.status(400).json({ error: "Missing pushToken in body" });
-      }
+    // Разбор passesUpdatedSince (секунды Unix)
+    const sinceParam = req.query.passesUpdatedSince;
+    const since = sinceParam ? new Date(Number(sinceParam) * 1000) : new Date(0);
 
-      console.log(`РЕГИСТРАЦИЯ УСТРОЙСТВА для карты ${serialNumber}`);
-
-      const { error: insertError } = await supa
-        .from("pass_devices")
-        .upsert({
-          device_library_identifier: deviceLibraryIdentifier,
-          push_token: pushToken,
-          pass_type_identifier: passTypeIdentifier,
-          serial_number: serialNumber
-        }, {
-          onConflict: "device_library_identifier,pass_type_identifier,serial_number"
-        });
-
-      if (insertError) {
-        console.error("Failed to register device:", insertError);
-        return res.status(500).json({ error: "Failed to register device" });
-      }
-
-      return res.status(201).json({ success: true });
-
-    } else if (req.method === "DELETE") {
-      // Удаление устройства (без изменений)
-      console.log(`ОТМЕНА РЕГИСТРАЦИИ для карты ${serialNumber}`);
-      const { error: deleteError } = await supa
-        .from("pass_devices")
-        .delete()
-        .eq("device_library_identifier", deviceLibraryIdentifier)
-        .eq("pass_type_identifier", passTypeIdentifier)
-        .eq("serial_number", serialNumber);
-
-      if (deleteError) {
-        console.error("Failed to unregister device:", deleteError);
-        return res.status(500).json({ error: "Failed to unregister device" });
-      }
-
-      return res.status(200).json({ success: true });
-
-    } else {
-      return res.status(405).json({ error: "Method not allowed" });
+    // Фильтруем по updated_at в issued_cards для наших uuid
+    const { data: updated, error: updErr } = await supa
+      .from('issued_cards')
+      .select('uuid, updated_at')
+      .in('uuid', serialNumbers)
+      .gt('updated_at', since.toISOString());
+    if (updErr) {
+      console.error('issued_cards updated check error:', updErr);
+      return res.status(500).end();
     }
 
+    if (!updated || updated.length === 0) {
+      return res.status(204).end();
+    }
+
+    const updatedSerials = updated.map(r => r.uuid);
+    const lastUpdated = Math.floor(Date.now() / 1000).toString();
+    return res.status(200).json({ serialNumbers: updatedSerials, lastUpdated });
   } catch (err) {
-    console.error("passkit device registration error:", err);
-    return res.status(500).json({ error: "Internal server error", detail: String(err?.message || err) });
+    console.error('registrations GET error:', err);
+    return res.status(500).end();
   }
 };

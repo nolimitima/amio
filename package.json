@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.55.0",
+    "node-apn": "^3.1.0",
     "html5-qrcode": "^2.3.8",
     "passkit-generator": "^3.4.0",
     "react-barcode": "^1.6.1",
