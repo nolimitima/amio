@@ -1,4 +1,4 @@
-// /api/passkit/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier].js
+// /api/passkit/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/index.js
 const { createClient } = require("@supabase/supabase-js");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -99,3 +99,4 @@ module.exports = async (req, res) => {
     return res.status(500).end();
   }
 };
+
