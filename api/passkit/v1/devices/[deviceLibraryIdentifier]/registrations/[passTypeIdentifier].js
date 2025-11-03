@@ -40,10 +40,12 @@ module.exports = async (req, res) => {
       .select('serial_number')
       .eq('device_library_identifier', deviceLibraryIdentifier)
       .eq('pass_type_identifier', passTypeIdentifier);
+    
     if (devErr) {
       console.error('list registrations error:', devErr);
       return res.status(500).end();
     }
+    
     if (!devices || devices.length === 0) {
       return res.status(204).end();
     }
@@ -51,6 +53,23 @@ module.exports = async (req, res) => {
     const serialNumbers = devices.map(d => d.serial_number).filter(Boolean);
     if (serialNumbers.length === 0) {
       return res.status(204).end();
+    }
+
+    // Проверяем, что authToken принадлежит хотя бы одной из карт на этом устройстве
+    const { data: validCard, error: authErr } = await supa
+      .from('issued_cards')
+      .select('uuid')
+      .in('uuid', serialNumbers)
+      .eq('auth_token', authToken)
+      .maybeSingle();
+    
+    if (authErr) {
+      console.error('auth token validation error:', authErr);
+      return res.status(500).end();
+    }
+    
+    if (!validCard) {
+      return res.status(401).end();
     }
 
     // Разбор passesUpdatedSince (секунды Unix)
