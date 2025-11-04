@@ -139,12 +139,15 @@ module.exports = async (req, res) => {
 
     const log_id = Array.isArray(logRows) && logRows[0]?.id ? logRows[0].id : null;
 
-    // 4) отправляем push-уведомление если баланс изменился
-    if (balanceChanged) {
-      sendPasskitPush(qr_value).catch(err => {
-        console.error('Failed to send push notification:', err);
-      });
-    }
+    // 4) отправляем push-уведомление
+    // !!!!!!!!!!!!!
+    // ВРЕМЕННО ВЫКЛЮЧАЕМ ДЛЯ ФИНАЛЬНОГО ТЕСТА
+    // !!!!!!!!!!!!!
+    // if (balanceChanged) {
+    sendPasskitPush(qr_value).catch(err => {
+      console.error('Failed to send push notification:', err);
+    });
+    // }
 
     // 5) ответ
     return res.status(200).json({

@@ -18,9 +18,8 @@ module.exports = async (req, res) => {
       return res.status(400).end();
     }
 
-    if (passTypeIdentifier !== PASS_TYPE_IDENTIFIER) {
-      return res.status(404).end();
-    }
+    // Не отдаем 404 по PTI: аутентификация по токену дальше надёжно ограничит доступ.
+    // Это также устраняет ложные 404 из-за несогласованности PTI между средами.
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', ['GET']);
