@@ -55,19 +55,18 @@ module.exports = async (req, res) => {
     }
 
     // Проверяем, что authToken принадлежит хотя бы одной из карт на этом устройстве
-    const { data: validCard, error: authErr } = await supa
+    const { data: validCards, error: authErr } = await supa
       .from('issued_cards')
       .select('uuid')
       .in('uuid', serialNumbers)
-      .eq('auth_token', authToken)
-      .maybeSingle();
+      .eq('auth_token', authToken);
     
     if (authErr) {
-      console.error('auth token validation error:', authErr);
+      console.error('Auth token validation error:', authErr);
       return res.status(500).end();
     }
     
-    if (!validCard) {
+    if (!validCards || validCards.length === 0) {
       return res.status(401).end();
     }
 
