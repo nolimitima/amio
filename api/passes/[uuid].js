@@ -201,7 +201,7 @@ module.exports = async (req, res) => {
       serialNumber: uuid,
 
       // Web service для push-обновлений
-      webServiceURL: `${PUBLIC_BASE_URL}/api/passkit`,
+      webServiceURL: `${PUBLIC_BASE_URL}/api/passkit/v1`,
       authenticationToken: authToken,
 
       // Название рядом с логотипом
