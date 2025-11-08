@@ -27,18 +27,31 @@ module.exports = async (req, res) => {
     }
 
     const authToken = parseAuthHeader(req.headers.authorization || '');
+    
+    // 🔍 ЛОГ 1: Что пришло от Apple
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📱 Apple Request:');
+    console.log('Device:', deviceLibraryIdentifier);
+    console.log('Pass Type:', passTypeIdentifier);
+    console.log('Token from header:', authToken);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
     if (!authToken) {
+      console.log('❌ No auth token');
       return res.status(401).end();
     }
 
     const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-    // Список всех серий, зарегистрированных на устройстве
+    // Список всех карт на устройстве
     const { data: devices, error: devErr } = await supa
       .from('pass_devices')
       .select('serial_number')
       .eq('device_library_identifier', deviceLibraryIdentifier)
       .eq('pass_type_identifier', passTypeIdentifier);
+    
+    // 🔍 ЛОГ 2: Что нашли в pass_devices
+    console.log('📋 Devices table:', devices);
     
     if (devErr) {
       console.error('list registrations error:', devErr);
@@ -46,54 +59,80 @@ module.exports = async (req, res) => {
     }
     
     if (!devices || devices.length === 0) {
+      console.log('❌ No devices found');
       return res.status(204).end();
     }
 
-    const serialNumbers = devices.map(d => d.serial_number).filter(Boolean);
-    if (serialNumbers.length === 0) {
+    const allSerials = devices.map(d => d.serial_number).filter(Boolean);
+    console.log('🎫 Serial numbers on device:', allSerials);
+    
+    if (allSerials.length === 0) {
       return res.status(204).end();
     }
 
-    // Проверяем, что authToken принадлежит хотя бы одной из карт на этом устройстве
-    const { data: validCards, error: authErr } = await supa
+    // Проверяем токен
+    const { data: authorizedCards, error: authErr } = await supa
       .from('issued_cards')
-      .select('uuid')
-      .in('uuid', serialNumbers)
+      .select('uuid, auth_token')  // ← ВАЖНО: добавь auth_token
+      .in('uuid', allSerials)
       .eq('auth_token', authToken);
     
+    // 🔍 ЛОГ 3: Что нашли в issued_cards
+    console.log('🔐 Auth check result:');
+    console.log('  Looking for token:', authToken);
+    console.log('  In cards:', allSerials);
+    console.log('  Found cards:', authorizedCards);
+    
     if (authErr) {
-      console.error('Auth token validation error:', authErr);
+      console.error('❌ Auth error:', authErr);
       return res.status(500).end();
     }
     
-    if (!validCards || validCards.length === 0) {
+    if (!authorizedCards || authorizedCards.length === 0) {
+      console.log('❌ 401: Token not found for any card');
+      
+      // 🔍 ЛОГ 4: Дополнительная диагностика
+      const { data: allCards } = await supa
+        .from('issued_cards')
+        .select('uuid, auth_token')
+        .in('uuid', allSerials);
+      
+      console.log('🔍 All cards with tokens:', allCards);
+      
       return res.status(401).end();
     }
 
-    // Разбор passesUpdatedSince (секунды Unix)
+    const authorizedSerials = authorizedCards.map(c => c.uuid);
+    console.log('✅ Authorized serials:', authorizedSerials);
+
+    // Проверяем обновления
     const sinceParam = req.query.passesUpdatedSince;
     const since = sinceParam ? new Date(Number(sinceParam) * 1000) : new Date(0);
 
-    // Фильтруем по updated_at в issued_cards для наших uuid
     const { data: updated, error: updErr } = await supa
       .from('issued_cards')
       .select('uuid, updated_at')
-      .in('uuid', serialNumbers)
+      .in('uuid', authorizedSerials)
       .gt('updated_at', since.toISOString());
+      
     if (updErr) {
       console.error('issued_cards updated check error:', updErr);
       return res.status(500).end();
     }
 
     if (!updated || updated.length === 0) {
+      console.log('ℹ️ No updates since', since);
       return res.status(204).end();
     }
 
     const updatedSerials = updated.map(r => r.uuid);
     const lastUpdated = Math.floor(Date.now() / 1000).toString();
+    
+    console.log('✅ Returning updates:', updatedSerials);
     return res.status(200).json({ serialNumbers: updatedSerials, lastUpdated });
+    
   } catch (err) {
-    console.error('registrations GET error:', err);
+    console.error('💥 Exception:', err);
     return res.status(500).end();
   }
 };
