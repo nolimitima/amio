@@ -1,162 +1,185 @@
 // /api/passkit/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/index.js
+// Vercel Serverless Function для получения списка обновлений PassKit
 const { createClient } = require("@supabase/supabase-js");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE;
 const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER;
 
-function parseAuthHeader(h) {
-  if (!h || typeof h !== 'string') return null;
+// =============== BRUTE-FORCE TOKEN FINDER ===============
+function bruteForceFindAuthToken(req) {
+  if (!req.headers || typeof req.headers !== 'object') {
+    return null;
+  }
+
+  const headerKeys = Object.keys(req.headers);
   
-  // Case-insensitive проверка префикса "ApplePass "
-  // Используем regex для надежности (как в passes endpoint)
-  const match = h.match(/^ApplePass\s+(.+)$/i);
-  if (!match) return null;
+  // Ищем ключ "authorization" case-insensitive
+  for (const key of headerKeys) {
+    if (key.toLowerCase() === 'authorization') {
+      const value = req.headers[key];
+      if (value && typeof value === 'string') {
+        // Убираем префикс "ApplePass " case-insensitive
+        const token = value.replace(/^ApplePass\s+/i, '').trim();
+        if (token) {
+          return token;
+        }
+      }
+    }
+  }
   
-  return match[1].trim();
+  return null;
 }
 
+// =============== HANDLER ===============
 module.exports = async (req, res) => {
   try {
+    // ========== DEBUG LOGGING (Priority 1) ==========
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📱 PassKit GET Registrations Request');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`METHOD: ${req.method}`);
+    console.log(`URL: ${req.url}`);
+    console.log(`QUERY: ${JSON.stringify(req.query, null, 2)}`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('HEADERS:');
+    console.log(JSON.stringify(req.headers, null, 2));
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
     const { deviceLibraryIdentifier, passTypeIdentifier } = req.query;
 
     if (!deviceLibraryIdentifier || !passTypeIdentifier) {
+      console.log('❌ Missing required query parameters');
       return res.status(400).end();
     }
-
-    // Не отдаем 404 по PTI: аутентификация по токену дальше надёжно ограничит доступ.
-    // Это также устраняет ложные 404 из-за несогласованности PTI между средами.
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', ['GET']);
       return res.status(405).end();
     }
 
-    // КРИТИЧНО: В Vercel заголовки могут быть в lowercase
-    // Проверяем все возможные варианты имени заголовка
-    const authHeader = req.headers.authorization 
-      || req.headers['authorization'] 
-      || req.headers.Authorization 
-      || req.headers['Authorization']
-      || '';
-    
-    // 🔍 ЛОГ 0: Диагностика заголовков
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📱 Apple Request (GET registrations):');
-    console.log('Device:', deviceLibraryIdentifier);
-    console.log('Pass Type:', passTypeIdentifier);
-    console.log('Raw auth header:', authHeader);
-    console.log('All headers keys:', Object.keys(req.headers || {}));
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    const authToken = parseAuthHeader(authHeader);
-    
-    // 🔍 ЛОГ 1: Результат парсинга
-    console.log('🔐 Parsed token:', authToken ? `${authToken.substring(0, 8)}...` : 'null');
+    // ========== BRUTE-FORCE TOKEN FINDER ==========
+    console.log('🔍 Starting brute-force token search...');
+    const authToken = bruteForceFindAuthToken(req);
     
     if (!authToken) {
-      console.log('❌ No auth token');
-      console.log('   Raw header value:', authHeader || '(empty)');
-      console.log('   Header length:', authHeader ? authHeader.length : 0);
-      if (authHeader) {
-        console.log('   First 20 chars:', authHeader.substring(0, 20));
-      }
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('❌ CRITICAL: AUTH HEADER MISSING');
+      console.log('   Searched all header keys:', Object.keys(req.headers || {}));
+      console.log('   No "authorization" header found (case-insensitive)');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       return res.status(401).end();
     }
 
+    console.log(`✅ Token found: ${authToken.substring(0, 8)}... (length: ${authToken.length})`);
+
+    // ========== DB VERIFICATION ==========
     const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-    // Список всех карт на устройстве
+    // Шаг 1: Найти все passes на этом устройстве
+    console.log('📋 Step 1: Finding passes on device...');
     const { data: devices, error: devErr } = await supa
       .from('pass_devices')
       .select('serial_number')
       .eq('device_library_identifier', deviceLibraryIdentifier)
       .eq('pass_type_identifier', passTypeIdentifier);
-    
-    // 🔍 ЛОГ 2: Что нашли в pass_devices
-    console.log('📋 Devices table:', devices);
-    
+
     if (devErr) {
-      console.error('list registrations error:', devErr);
+      console.error('❌ DB Error (pass_devices):', devErr);
       return res.status(500).end();
     }
-    
+
+    console.log(`📋 Found ${devices?.length || 0} device(s) in pass_devices`);
+
     if (!devices || devices.length === 0) {
-      console.log('❌ No devices found');
+      console.log('ℹ️ No passes registered on this device');
       return res.status(204).end();
     }
 
     const allSerials = devices.map(d => d.serial_number).filter(Boolean);
-    console.log('🎫 Serial numbers on device:', allSerials);
-    
+    console.log(`🎫 Serial numbers on device: ${JSON.stringify(allSerials)}`);
+
     if (allSerials.length === 0) {
+      console.log('ℹ️ No valid serial numbers found');
       return res.status(204).end();
     }
 
-    // Проверяем токен
+    // Шаг 2: Проверить токен для этих passes
+    console.log('🔐 Step 2: Verifying auth_token in issued_cards...');
     const { data: authorizedCards, error: authErr } = await supa
       .from('issued_cards')
-      .select('uuid, auth_token')  // ← ВАЖНО: добавь auth_token
+      .select('uuid, auth_token')
       .in('uuid', allSerials)
       .eq('auth_token', authToken);
-    
-    // 🔍 ЛОГ 3: Что нашли в issued_cards
-    console.log('🔐 Auth check result:');
-    console.log('  Looking for token:', authToken);
-    console.log('  In cards:', allSerials);
-    console.log('  Found cards:', authorizedCards);
-    
+
     if (authErr) {
-      console.error('❌ Auth error:', authErr);
+      console.error('❌ DB Error (issued_cards):', authErr);
       return res.status(500).end();
     }
-    
+
+    console.log(`🔐 Auth check: Looking for token "${authToken.substring(0, 8)}..." in ${allSerials.length} card(s)`);
+    console.log(`🔐 Found ${authorizedCards?.length || 0} authorized card(s):`, 
+      authorizedCards?.map(c => c.uuid) || []);
+
     if (!authorizedCards || authorizedCards.length === 0) {
-      console.log('❌ 401: Token not found for any card');
+      console.log('❌ 401: Token not found for any card on this device');
       
-      // 🔍 ЛОГ 4: Дополнительная диагностика
+      // Дополнительная диагностика
       const { data: allCards } = await supa
         .from('issued_cards')
         .select('uuid, auth_token')
         .in('uuid', allSerials);
       
-      console.log('🔍 All cards with tokens:', allCards);
+      console.log('🔍 All cards on device (for debugging):', 
+        allCards?.map(c => ({ uuid: c.uuid, token: c.auth_token ? `${c.auth_token.substring(0, 8)}...` : 'null' })) || []);
       
       return res.status(401).end();
     }
 
     const authorizedSerials = authorizedCards.map(c => c.uuid);
-    console.log('✅ Authorized serials:', authorizedSerials);
+    console.log(`✅ Authorized serials: ${JSON.stringify(authorizedSerials)}`);
 
-    // Проверяем обновления
+    // Шаг 3: Проверить обновления (Apple PassKit spec)
     const sinceParam = req.query.passesUpdatedSince;
     const since = sinceParam ? new Date(Number(sinceParam) * 1000) : new Date(0);
+    
+    console.log(`🕐 Step 3: Checking for updates since: ${since.toISOString()}`);
 
     const { data: updated, error: updErr } = await supa
       .from('issued_cards')
       .select('uuid, updated_at')
       .in('uuid', authorizedSerials)
       .gt('updated_at', since.toISOString());
-      
+
     if (updErr) {
-      console.error('issued_cards updated check error:', updErr);
+      console.error('❌ DB Error (updated check):', updErr);
       return res.status(500).end();
     }
 
     if (!updated || updated.length === 0) {
-      console.log('ℹ️ No updates since', since);
+      console.log(`ℹ️ No updates since ${since.toISOString()}`);
       return res.status(204).end();
     }
 
     const updatedSerials = updated.map(r => r.uuid);
     const lastUpdated = Math.floor(Date.now() / 1000).toString();
-    
-    console.log('✅ Returning updates:', updatedSerials);
-    return res.status(200).json({ serialNumbers: updatedSerials, lastUpdated });
-    
+
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`✅ SUCCESS: Returning ${updatedSerials.length} update(s)`);
+    console.log(`   Serial numbers: ${JSON.stringify(updatedSerials)}`);
+    console.log(`   Last updated: ${lastUpdated}`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    return res.status(200).json({ 
+      serialNumbers: updatedSerials, 
+      lastUpdated 
+    });
+
   } catch (err) {
-    console.error('💥 Exception:', err);
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('💥 EXCEPTION:', err);
+    console.error('Stack:', err.stack);
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     return res.status(500).end();
   }
 };
-
