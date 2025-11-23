@@ -19,10 +19,13 @@ if (!SERVICE_KEY) throw new Error('Service key missing (SUPABASE_SERVICE_ROLE/KE
 
 // =============== UTILS ===============
 const parseAuthHeader = (authHeader) => {
-  if (!authHeader || !authHeader.startsWith('ApplePass ')) {
-    return null;
-  }
-  return authHeader.substring('ApplePass '.length).trim(); // Remove "ApplePass " prefix
+  if (!authHeader || typeof authHeader !== 'string') return null;
+  
+  // Case-insensitive проверка префикса "ApplePass "
+  const match = authHeader.match(/^ApplePass\s+(.+)$/i);
+  if (!match) return null;
+  
+  return match[1].trim();
 };
 
 // =============== HANDLER ===============
@@ -40,8 +43,17 @@ module.exports = async (req, res) => {
     });
 
     // Проверяем токен авторизации
-    const authToken = parseAuthHeader(req.headers.authorization);
+    // КРИТИЧНО: В Vercel заголовки могут быть в lowercase
+    const authHeader = req.headers.authorization 
+      || req.headers['authorization'] 
+      || req.headers.Authorization 
+      || req.headers['Authorization']
+      || '';
+    
+    const authToken = parseAuthHeader(authHeader);
     if (!authToken) {
+      console.error('[PassKit] ❌ POST registration: No auth token');
+      console.error('   Raw header:', authHeader || '(empty)');
       return res.status(401).json({ error: 'Invalid authorization header' });
     }
 

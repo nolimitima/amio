@@ -6,8 +6,14 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE;
 const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER;
 
 function parseAuthHeader(h) {
-  if (!h || !h.startsWith('ApplePass ')) return null;
-  return h.substring('ApplePass '.length).trim();
+  if (!h || typeof h !== 'string') return null;
+  
+  // Case-insensitive проверка префикса "ApplePass "
+  // Используем regex для надежности (как в passes endpoint)
+  const match = h.match(/^ApplePass\s+(.+)$/i);
+  if (!match) return null;
+  
+  return match[1].trim();
 }
 
 module.exports = async (req, res) => {
@@ -26,18 +32,35 @@ module.exports = async (req, res) => {
       return res.status(405).end();
     }
 
-    const authToken = parseAuthHeader(req.headers.authorization || '');
+    // КРИТИЧНО: В Vercel заголовки могут быть в lowercase
+    // Проверяем все возможные варианты имени заголовка
+    const authHeader = req.headers.authorization 
+      || req.headers['authorization'] 
+      || req.headers.Authorization 
+      || req.headers['Authorization']
+      || '';
     
-    // 🔍 ЛОГ 1: Что пришло от Apple
+    // 🔍 ЛОГ 0: Диагностика заголовков
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📱 Apple Request:');
+    console.log('📱 Apple Request (GET registrations):');
     console.log('Device:', deviceLibraryIdentifier);
     console.log('Pass Type:', passTypeIdentifier);
-    console.log('Token from header:', authToken);
+    console.log('Raw auth header:', authHeader);
+    console.log('All headers keys:', Object.keys(req.headers || {}));
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+    const authToken = parseAuthHeader(authHeader);
+    
+    // 🔍 ЛОГ 1: Результат парсинга
+    console.log('🔐 Parsed token:', authToken ? `${authToken.substring(0, 8)}...` : 'null');
     
     if (!authToken) {
       console.log('❌ No auth token');
+      console.log('   Raw header value:', authHeader || '(empty)');
+      console.log('   Header length:', authHeader ? authHeader.length : 0);
+      if (authHeader) {
+        console.log('   First 20 chars:', authHeader.substring(0, 20));
+      }
       return res.status(401).end();
     }
 
