@@ -166,17 +166,31 @@ module.exports = async (req, res) => {
       .single();
     if (e1 || !issued) return res.status(404).json({ error: "Card not found" });
 
-    // Генерируем auth_token если его нет
+    // КРИТИЧНО: Генерируем и сохраняем auth_token если его нет
+    // Токен ДОЛЖЕН существовать в БД перед генерацией pass.json
     let authToken = issued.auth_token;
     if (!authToken) {
       authToken = generateAuthToken();
-      const { error: updateError } = await supa
+      console.log(`[PassKit] Generating new auth_token for ${uuid}: ${authToken.substring(0, 8)}...`);
+      
+      const { data: updated, error: updateError } = await supa
         .from("issued_cards")
         .update({ auth_token: authToken })
-        .eq("uuid", uuid);
-      if (updateError) {
-        console.error("Failed to update auth_token:", updateError);
+        .eq("uuid", uuid)
+        .select("auth_token")
+        .single();
+      
+      if (updateError || !updated || updated.auth_token !== authToken) {
+        console.error("[PassKit] ❌ CRITICAL: Failed to save auth_token to DB:", updateError);
+        return res.status(500).json({ 
+          error: "Failed to save authentication token", 
+          detail: "Cannot generate pass without valid auth_token in database" 
+        });
       }
+      
+      console.log(`[PassKit] ✅ Auth token saved successfully for ${uuid}`);
+    } else {
+      console.log(`[PassKit] Using existing auth_token for ${uuid}: ${authToken.substring(0, 8)}...`);
     }
 
     const serial = issued.uuid;
@@ -191,6 +205,15 @@ module.exports = async (req, res) => {
     // ---------- Barcode payload ----------
     const payload = issued.qr_value || uuid;
 
+    // КРИТИЧНО: Финальная проверка что токен существует
+    if (!authToken || authToken.trim().length === 0) {
+      console.error(`[PassKit] ❌ CRITICAL: authToken is empty for ${uuid}`);
+      return res.status(500).json({ 
+        error: "Authentication token is missing", 
+        detail: "Cannot generate pass without authenticationToken" 
+      });
+    }
+
     // ---------- pass.json ----------
     const passJson = {
       formatVersion: 1,
@@ -202,7 +225,7 @@ module.exports = async (req, res) => {
 
       // Web service для push-обновлений
       webServiceURL: `${PUBLIC_BASE_URL}/api/passkit`,
-      authenticationToken: authToken,
+      authenticationToken: authToken, // КРИТИЧНО: этот токен должен совпадать с auth_token в БД
 
       // Название рядом с логотипом
       logoText: tpl.user_facing_name || ORG_NAME,
@@ -292,6 +315,16 @@ if (coverBuf) pass.addBuffer("strip.png", coverBuf);
     // Already embedded into pass.json above as QR (both barcodes[] and barcode)
 
     // ---------- Build & Send ----------
+    // Финальная проверка что authenticationToken встроен в pass.json
+    if (!passJson.authenticationToken) {
+      console.error(`[PassKit] ❌ CRITICAL: authenticationToken missing from pass.json for ${uuid}`);
+      return res.status(500).json({ 
+        error: "Authentication token not embedded in pass", 
+        detail: "pass.json is missing authenticationToken field" 
+      });
+    }
+    
+    console.log(`[PassKit] ✅ Generating pass for ${uuid} with auth_token: ${passJson.authenticationToken.substring(0, 8)}...`);
     const pkpass = pass.getAsBuffer();
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader("Content-Disposition", `attachment; filename=${uuid}.pkpass`);
