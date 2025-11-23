@@ -86,13 +86,45 @@ module.exports = async (req, res) => {
     const authToken = bruteForceFindAuthToken(req);
     
     if (!authToken) {
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('❌ CRITICAL: AUTH HEADER MISSING');
-      console.log('   Searched all header keys:', allHeaderKeys);
-      console.log('   No "authorization" header found (case-insensitive)');
-      console.log('   ⚠️  POSSIBLE CAUSE: Pass was installed without authenticationToken');
-      console.log('   ⚠️  SOLUTION: Regenerate the pass to include auth_token');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      // ДИАГНОСТИКА: Проверяем БД ДО возврата 401, чтобы понять ситуацию
+      const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+      
+      const { data: devicesCheck } = await supa
+        .from('pass_devices')
+        .select('serial_number')
+        .eq('device_library_identifier', deviceLibraryIdentifier)
+        .eq('pass_type_identifier', passTypeIdentifier);
+      
+      if (devicesCheck && devicesCheck.length > 0) {
+        const serials = devicesCheck.map(d => d.serial_number).filter(Boolean);
+        const { data: cardsCheck } = await supa
+          .from('issued_cards')
+          .select('uuid, auth_token')
+          .in('uuid', serials);
+        
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('❌ CRITICAL: AUTH HEADER MISSING');
+        console.log('   Searched all header keys:', allHeaderKeys);
+        console.log('   No "authorization" header found (case-insensitive)');
+        console.log(`   📋 Found ${serials.length} pass(es) on device in DB`);
+        console.log(`   🔐 Cards in DB:`, cardsCheck?.map(c => ({
+          uuid: c.uuid,
+          has_token: !!c.auth_token,
+          token_preview: c.auth_token ? `${c.auth_token.substring(0, 8)}...` : 'MISSING'
+        })) || []);
+        console.log('   ⚠️  ROOT CAUSE: Pass was installed WITHOUT authenticationToken in pass.json');
+        console.log('   ⚠️  Apple does NOT send Authorization header if pass has no token');
+        console.log('   ⚠️  SOLUTION: Regenerate pass via /api/passes/[uuid] and reinstall in Wallet');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      } else {
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('❌ CRITICAL: AUTH HEADER MISSING');
+        console.log('   Searched all header keys:', allHeaderKeys);
+        console.log('   No "authorization" header found (case-insensitive)');
+        console.log('   ⚠️  No passes found on device in DB');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      }
+      
       return res.status(401).end();
     }
 
