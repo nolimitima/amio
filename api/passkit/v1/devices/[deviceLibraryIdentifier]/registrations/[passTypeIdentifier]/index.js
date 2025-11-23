@@ -13,7 +13,7 @@ function bruteForceFindAuthToken(req) {
   }
 
   const headerKeys = Object.keys(req.headers);
-  
+
   // Ищем ключ "authorization" case-insensitive
   for (const key of headerKeys) {
     if (key.toLowerCase() === 'authorization') {
@@ -27,7 +27,7 @@ function bruteForceFindAuthToken(req) {
       }
     }
   }
-  
+
   return null;
 }
 
@@ -60,12 +60,12 @@ module.exports = async (req, res) => {
 
     // ========== BRUTE-FORCE TOKEN FINDER ==========
     console.log('🔍 Starting brute-force token search...');
-    
+
     // КРИТИЧНО: Логируем ВСЕ заголовки для диагностики
     const allHeaderKeys = Object.keys(req.headers || {});
     console.log(`📋 Total headers: ${allHeaderKeys.length}`);
     console.log(`📋 Header keys: ${allHeaderKeys.join(', ')}`);
-    
+
     // Ищем authorization вручную и логируем
     let foundAuthKey = null;
     for (const key of allHeaderKeys) {
@@ -76,32 +76,32 @@ module.exports = async (req, res) => {
         break;
       }
     }
-    
+
     if (!foundAuthKey) {
       console.log('❌ Authorization header NOT FOUND in any case variation');
       console.log('   This means Apple did not send the token, OR');
       console.log('   the pass was installed without authenticationToken in pass.json');
     }
-    
+
     const authToken = bruteForceFindAuthToken(req);
-    
+
     if (!authToken) {
       // ДИАГНОСТИКА: Проверяем БД ДО возврата 401, чтобы понять ситуацию
       const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-      
+
       const { data: devicesCheck } = await supa
         .from('pass_devices')
         .select('serial_number')
         .eq('device_library_identifier', deviceLibraryIdentifier)
         .eq('pass_type_identifier', passTypeIdentifier);
-      
+
       if (devicesCheck && devicesCheck.length > 0) {
         const serials = devicesCheck.map(d => d.serial_number).filter(Boolean);
         const { data: cardsCheck } = await supa
           .from('issued_cards')
           .select('uuid, auth_token')
           .in('uuid', serials);
-        
+
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         console.log('❌ CRITICAL: AUTH HEADER MISSING');
         console.log('   Searched all header keys:', allHeaderKeys);
@@ -124,7 +124,7 @@ module.exports = async (req, res) => {
         console.log('   ⚠️  No passes found on device in DB');
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       }
-      
+
       return res.status(401).end();
     }
 
@@ -161,73 +161,29 @@ module.exports = async (req, res) => {
       return res.status(204).end();
     }
 
-    // Шаг 2: Проверить токен для этих passes (с детальным логированием)
+    // Шаг 2: Проверить токен для этих passes
     console.log('🔐 Step 2: Verifying auth_token in issued_cards...');
-    
-    // Получаем ВСЕ карты для детального сравнения
-    const { data: allCards, error: authErr } = await supa
+
+    // ✅ FIXED: Use database filtering, same as POST endpoint
+    const { data: authorizedCards, error: authErr } = await supa
       .from('issued_cards')
       .select('uuid, auth_token')
-      .in('uuid', allSerials);
+      .in('uuid', allSerials)
+      .eq('auth_token', authToken);  // Database-level filtering
 
     if (authErr) {
       console.error('❌ DB Error (issued_cards):', authErr);
       return res.status(500).end();
     }
 
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('🔍 DEBUG AUTH:');
-    console.log('   Received Token (from Phone):', authToken);
-    console.log('   Received Token Length:', authToken.length);
-    console.log('   Cards on device:', allSerials.length);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-    // Детальное сравнение токенов для каждой карты
-    const authorizedCards = [];
-    let foundMatch = false;
-
-    for (const card of allCards || []) {
-      const storedToken = card.auth_token;
-      const tokensMatch = storedToken === authToken;
-      
-      console.log(`🔍 Card ${card.uuid}:`);
-      console.log('   Received Token (from Phone):', authToken);
-      console.log('   Stored Token (in DB):', storedToken || '(null)');
-      console.log('   Stored Token Length:', storedToken ? storedToken.length : 0);
-      console.log('   Do they match?', tokensMatch);
-      
-      if (tokensMatch) {
-        foundMatch = true;
-        authorizedCards.push(card);
-        console.log('   ✅ MATCH!');
-      } else {
-        console.log('   ❌ MISMATCH!');
-        if (storedToken) {
-          console.log('   Token comparison:');
-          console.log(`     Phone: "${authToken.substring(0, 20)}..." (full: ${authToken.length} chars)`);
-          console.log(`     DB:    "${storedToken.substring(0, 20)}..." (full: ${storedToken.length} chars)`);
-          console.log('     First 10 chars match?', authToken.substring(0, 10) === storedToken.substring(0, 10));
-          console.log('     Last 10 chars match?', authToken.slice(-10) === storedToken.slice(-10));
-        }
-      }
-      console.log('   ──────────────────────────────────────────────');
-    }
-
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`🔐 Summary: Found ${authorizedCards.length} matching card(s) out of ${allCards?.length || 0}`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-    // TEMPORARY FIX: "Trust Me" Mode для тестирования
-    if (!foundMatch) {
+    if (!authorizedCards || authorizedCards.length === 0) {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('⚠️⚠️⚠️  ALLOWING INVALID TOKEN FOR TESTING  ⚠️⚠️⚠️');
-      console.log('   This is a TEMPORARY DEBUG MODE');
-      console.log('   Token mismatch detected but allowing access');
-      console.log('   DO NOT USE IN PRODUCTION!');
+      console.log('❌ AUTHENTICATION FAILED');
+      console.log('   Token does not match any registered pass on this device');
+      console.log('   Received token (first 10 chars):', authToken.substring(0, 10));
+      console.log('   Device has', allSerials.length, 'pass(es)');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      
-      // Используем все карты для продолжения (временно)
-      authorizedCards.push(...(allCards || []));
+      return res.status(401).end();
     }
 
     const authorizedSerials = authorizedCards.map(c => c.uuid);
@@ -236,7 +192,7 @@ module.exports = async (req, res) => {
     // Шаг 3: Проверить обновления (Apple PassKit spec)
     const sinceParam = req.query.passesUpdatedSince;
     const since = sinceParam ? new Date(Number(sinceParam) * 1000) : new Date(0);
-    
+
     console.log(`🕐 Step 3: Checking for updates since: ${since.toISOString()}`);
 
     const { data: updated, error: updErr } = await supa
@@ -264,9 +220,9 @@ module.exports = async (req, res) => {
     console.log(`   Last updated: ${lastUpdated}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-    return res.status(200).json({ 
-      serialNumbers: updatedSerials, 
-      lastUpdated 
+    return res.status(200).json({
+      serialNumbers: updatedSerials,
+      lastUpdated
     });
 
   } catch (err) {
