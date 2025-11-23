@@ -60,13 +60,38 @@ module.exports = async (req, res) => {
 
     // ========== BRUTE-FORCE TOKEN FINDER ==========
     console.log('🔍 Starting brute-force token search...');
+    
+    // КРИТИЧНО: Логируем ВСЕ заголовки для диагностики
+    const allHeaderKeys = Object.keys(req.headers || {});
+    console.log(`📋 Total headers: ${allHeaderKeys.length}`);
+    console.log(`📋 Header keys: ${allHeaderKeys.join(', ')}`);
+    
+    // Ищем authorization вручную и логируем
+    let foundAuthKey = null;
+    for (const key of allHeaderKeys) {
+      if (key.toLowerCase() === 'authorization') {
+        foundAuthKey = key;
+        console.log(`✅ Found authorization header with key: "${key}"`);
+        console.log(`   Value (first 50 chars): ${String(req.headers[key]).substring(0, 50)}`);
+        break;
+      }
+    }
+    
+    if (!foundAuthKey) {
+      console.log('❌ Authorization header NOT FOUND in any case variation');
+      console.log('   This means Apple did not send the token, OR');
+      console.log('   the pass was installed without authenticationToken in pass.json');
+    }
+    
     const authToken = bruteForceFindAuthToken(req);
     
     if (!authToken) {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('❌ CRITICAL: AUTH HEADER MISSING');
-      console.log('   Searched all header keys:', Object.keys(req.headers || {}));
+      console.log('   Searched all header keys:', allHeaderKeys);
       console.log('   No "authorization" header found (case-insensitive)');
+      console.log('   ⚠️  POSSIBLE CAUSE: Pass was installed without authenticationToken');
+      console.log('   ⚠️  SOLUTION: Regenerate the pass to include auth_token');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       return res.status(401).end();
     }
@@ -132,6 +157,11 @@ module.exports = async (req, res) => {
       
       console.log('🔍 All cards on device (for debugging):', 
         allCards?.map(c => ({ uuid: c.uuid, token: c.auth_token ? `${c.auth_token.substring(0, 8)}...` : 'null' })) || []);
+      
+      console.log(`🔍 Searching for token: "${authToken.substring(0, 8)}..."`);
+      console.log(`🔍 Cards on device: ${JSON.stringify(allSerials)}`);
+      console.log('⚠️  POSSIBLE CAUSE: Token mismatch between pass.json and database');
+      console.log('⚠️  SOLUTION: Regenerate pass to sync auth_token');
       
       return res.status(401).end();
     }
