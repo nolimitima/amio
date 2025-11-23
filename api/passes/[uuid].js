@@ -1,6 +1,7 @@
 // api/passes/[uuid].js
 // Vercel Serverless Function (Node 20, CommonJS)
 // Supabase + passkit-generator v3
+// CRITICAL: This endpoint MUST generate authenticationToken for PassKit web service
 
 const { createClient } = require("@supabase/supabase-js");
 const { PKPass } = require("passkit-generator");
@@ -38,7 +39,7 @@ if (!PUBLIC_BASE_URL) throw new Error("PUBLIC_BASE_URL missing");
 // =============== UTILS ===============
 const hex2rgb = (hex) => {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
-  return m ? `rgb(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)})` : undefined;
+  return m ? `rgb(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)})` : undefined;
 };
 
 const generateAuthToken = () => {
@@ -172,22 +173,22 @@ module.exports = async (req, res) => {
     if (!authToken) {
       authToken = generateAuthToken();
       console.log(`[PassKit] Generating new auth_token for ${uuid}: ${authToken.substring(0, 8)}...`);
-      
+
       const { data: updated, error: updateError } = await supa
         .from("issued_cards")
         .update({ auth_token: authToken })
         .eq("uuid", uuid)
         .select("auth_token")
         .single();
-      
+
       if (updateError || !updated || updated.auth_token !== authToken) {
         console.error("[PassKit] ❌ CRITICAL: Failed to save auth_token to DB:", updateError);
-        return res.status(500).json({ 
-          error: "Failed to save authentication token", 
-          detail: "Cannot generate pass without valid auth_token in database" 
+        return res.status(500).json({
+          error: "Failed to save authentication token",
+          detail: "Cannot generate pass without valid auth_token in database"
         });
       }
-      
+
       console.log(`[PassKit] ✅ Auth token saved successfully for ${uuid}`);
     } else {
       console.log(`[PassKit] Using existing auth_token for ${uuid}: ${authToken.substring(0, 8)}...`);
@@ -208,9 +209,9 @@ module.exports = async (req, res) => {
     // КРИТИЧНО: Финальная проверка что токен существует
     if (!authToken || authToken.trim().length === 0) {
       console.error(`[PassKit] ❌ CRITICAL: authToken is empty for ${uuid}`);
-      return res.status(500).json({ 
-        error: "Authentication token is missing", 
-        detail: "Cannot generate pass without authenticationToken" 
+      return res.status(500).json({
+        error: "Authentication token is missing",
+        detail: "Cannot generate pass without authenticationToken"
       });
     }
 
@@ -233,7 +234,7 @@ module.exports = async (req, res) => {
       // Цвета
       foregroundColor: hex2rgb(tpl.value_color || "#232323"),
       backgroundColor: hex2rgb(tpl.bg_color || "#10182B"),
-      labelColor:      hex2rgb(tpl.label_color || "#F1EFED"),
+      labelColor: hex2rgb(tpl.label_color || "#F1EFED"),
 
       storeCard: {
         // Header — только баланс
@@ -256,10 +257,10 @@ module.exports = async (req, res) => {
 
         // Оборотка — бизнес-инфа
         backFields: [
-          ...(tpl.description    ? [{ key: "desc",   label: "Описание",  value: tpl.description }] : []),
-          ...(tpl.website_url    ? [{ key: "site",   label: "Сайт",       value: tpl.website_url }] : []),
-          ...(tpl.contact_email  ? [{ key: "email",  label: "Email",      value: tpl.contact_email }] : []),
-          ...(tpl.contact_phone  ? [{ key: "phone",  label: "Телефон",    value: tpl.contact_phone }] : []),
+          ...(tpl.description ? [{ key: "desc", label: "Описание", value: tpl.description }] : []),
+          ...(tpl.website_url ? [{ key: "site", label: "Сайт", value: tpl.website_url }] : []),
+          ...(tpl.contact_email ? [{ key: "email", label: "Email", value: tpl.contact_email }] : []),
+          ...(tpl.contact_phone ? [{ key: "phone", label: "Телефон", value: tpl.contact_phone }] : []),
         ],
       },
 
@@ -275,7 +276,7 @@ module.exports = async (req, res) => {
         format: "PKBarcodeFormatQR",
         message: serial,
         messageEncoding: "iso-8859-1"
-      },      
+      },
     };
 
     // ---------- CERTS ----------
@@ -309,7 +310,7 @@ module.exports = async (req, res) => {
 
     // Cover → как фон, без текста поверх
     const coverBuf = await fetchBuffer(tpl.cover_url);
-if (coverBuf) pass.addBuffer("strip.png", coverBuf);
+    if (coverBuf) pass.addBuffer("strip.png", coverBuf);
 
     // ---------- Barcode / QR ----------
     // Already embedded into pass.json above as QR (both barcodes[] and barcode)
@@ -318,12 +319,12 @@ if (coverBuf) pass.addBuffer("strip.png", coverBuf);
     // Финальная проверка что authenticationToken встроен в pass.json
     if (!passJson.authenticationToken) {
       console.error(`[PassKit] ❌ CRITICAL: authenticationToken missing from pass.json for ${uuid}`);
-      return res.status(500).json({ 
-        error: "Authentication token not embedded in pass", 
-        detail: "pass.json is missing authenticationToken field" 
+      return res.status(500).json({
+        error: "Authentication token not embedded in pass",
+        detail: "pass.json is missing authenticationToken field"
       });
     }
-    
+
     console.log(`[PassKit] ✅ Generating pass for ${uuid} with auth_token: ${passJson.authenticationToken.substring(0, 8)}...`);
     const pkpass = pass.getAsBuffer();
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
