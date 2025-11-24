@@ -114,7 +114,8 @@ module.exports = async (req, res) => {
 
       // Для POST возвращаем 201 (создано), для PUT — 200 (обновлено)
       const status = req.method === 'POST' ? 201 : 200;
-      return res.status(status).json({ success: true });
+      console.log(`✅ Device registered successfully. Returning ${status}`);
+      return res.status(status).end(); // No body per Apple spec
     }
 
     // Обработка запроса удаления регистрации
