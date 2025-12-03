@@ -6,7 +6,7 @@ const apnProvider = require('../../lib/apn');
 const apn = require('node-apn');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE; // service role key
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE; // service role key
 const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER;
 
 function getClientIp(req) {
@@ -68,10 +68,14 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { qr_value, action, amount, operator_id, location } = req.body || {};
+    const { qr_value, phone, action, amount, operator_id, location } = req.body || {};
 
-    if (!qr_value || typeof qr_value !== 'string') {
-      return res.status(400).json({ error: 'qr_value (uuid) is required' });
+    // Sanitize phone if provided (remove all non-digit characters)
+    const sanitizedPhone = phone ? phone.replace(/\D/g, '') : null;
+
+    // Validate: require EITHER qr_value OR phone
+    if (!qr_value && !sanitizedPhone) {
+      return res.status(400).json({ error: 'Either qr_value (uuid) or phone is required' });
     }
 
     const normalizedAction = (action || 'scan').toLowerCase();
@@ -79,12 +83,18 @@ module.exports = async (req, res) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-    // 1) находим карту
-    const { data: card, error: findErr } = await supabase
+    // 1) находим карту (by uuid OR by phone)
+    let query = supabase
       .from('issued_cards')
-      .select('uuid, guest_name, balance, email, phone, card_template_id')
-      .eq('uuid', qr_value)
-      .single();
+      .select('uuid, guest_name, balance, email, phone, card_template_id');
+
+    if (qr_value) {
+      query = query.eq('uuid', qr_value);
+    } else {
+      query = query.eq('phone', sanitizedPhone);
+    }
+
+    const { data: card, error: findErr } = await query.single();
 
     if (findErr || !card) {
       return res.status(404).json({ error: 'Card not found' });
@@ -93,13 +103,14 @@ module.exports = async (req, res) => {
     // 2) применяем действие (если есть)
     let resultCard = card;
     let balanceChanged = false;
-    
+    const cardUuid = card.uuid; // Use the uuid from the found card
+
     if (normalizedAction === 'redeem' && amt > 0) {
       const newBalance = Math.max(0, Number(card.balance) - amt);
       const { data: updated, error: updErr } = await supabase
         .from('issued_cards')
         .update({ balance: newBalance })
-        .eq('uuid', qr_value)
+        .eq('uuid', cardUuid)
         .select()
         .single();
       if (updErr) throw updErr;
@@ -110,7 +121,7 @@ module.exports = async (req, res) => {
       const { data: updated, error: updErr } = await supabase
         .from('issued_cards')
         .update({ balance: newBalance })
-        .eq('uuid', qr_value)
+        .eq('uuid', cardUuid)
         .select()
         .single();
       if (updErr) throw updErr;
@@ -123,7 +134,7 @@ module.exports = async (req, res) => {
     const { data: logRows, error: logErr } = await supabase
       .from('scan_logs')
       .insert([{
-        card_uuid: qr_value,
+        card_uuid: cardUuid,
         action: normalizedAction,
         amount: amt || null,
         location: clientIp,
@@ -144,7 +155,7 @@ module.exports = async (req, res) => {
     // ВРЕМЕННО ВЫКЛЮЧАЕМ ДЛЯ ФИНАЛЬНОГО ТЕСТА
     // !!!!!!!!!!!!!
     // if (balanceChanged) {
-    sendPasskitPush(qr_value).catch(err => {
+    sendPasskitPush(cardUuid).catch(err => {
       console.error('Failed to send push notification:', err);
     });
     // }

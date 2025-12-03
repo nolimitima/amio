@@ -9,10 +9,10 @@ const Scanner = () => {
   const [error, setError] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState("");
-  
+
   // ✅ ИЗМЕНЕНИЕ 1: Добавлено новое состояние для отслеживания обновления
   const [isUpdating, setIsUpdating] = useState(false);
-  
+
   const readerId = "qr-reader";
   const scannerRef = useRef(null);
 
@@ -37,14 +37,14 @@ const Scanner = () => {
     }
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
+        scannerRef.current.stop().catch(() => { });
       }
     };
   }, [scanning]);
 
   const stopScanner = () => {
     if (scannerRef.current) {
-      scannerRef.current.stop().catch(() => {});
+      scannerRef.current.stop().catch(() => { });
       scannerRef.current.clear();
       scannerRef.current = null;
     }
@@ -65,14 +65,21 @@ const Scanner = () => {
     }
 
     try {
+      // Build request body based on whether we have qr_value or phone
+      const body = {
+        operator_id: currentUser?.id || null,
+        ...extra,
+      };
+
+      // Add either qr_value or phone (phone comes from extra)
+      if (qrValue) {
+        body.qr_value = qrValue;
+      }
+
       const res = await fetch("/api/scanner/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          qr_value: qrValue,
-          operator_id: currentUser?.id || null,
-          ...extra,
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
@@ -92,8 +99,20 @@ const Scanner = () => {
 
   const handleManualSubmit = async (e) => {
     e.preventDefault();
-    if (!manual.trim()) return;
-    await handleScan(manual.trim());
+    const trimmedInput = manual.trim();
+    if (!trimmedInput) return;
+
+    // Strip spaces and check if it looks like a phone number (mostly digits)
+    const strippedInput = trimmedInput.replace(/\s+/g, '');
+    const isPhone = /^\d+$/.test(strippedInput);
+
+    if (isPhone) {
+      // Send as phone parameter
+      await handleScan('', { phone: strippedInput });
+    } else {
+      // Send as qr_value (UUID)
+      await handleScan(strippedInput);
+    }
   };
 
   return (
@@ -121,8 +140,8 @@ const Scanner = () => {
 
       <form onSubmit={handleManualSubmit} className="flex gap-2 mb-4">
         <input
-          type="text"
-          placeholder="Ввести UUID вручную"
+          type="tel"
+          placeholder="Введите номер телефона (7...)"
           className="flex-1 border rounded px-2 py-1"
           value={manual}
           onChange={(e) => setManual(e.target.value)}
