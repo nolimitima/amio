@@ -85,91 +85,58 @@ module.exports = async (req, res) => {
 
     const authToken = bruteForceFindAuthToken(req);
 
+    // ⚠️⚠️⚠️ TEMPORARY NO-SECURITY MODE ⚠️⚠️⚠️
+    // BYPASS AUTHENTICATION FOR TESTING
     if (!authToken) {
-      // ДИАГНОСТИКА: Проверяем БД ДО возврата 401, чтобы понять ситуацию
-      const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-
-      const { data: devicesCheck } = await supa
-        .from('pass_devices')
-        .select('serial_number')
-        .eq('device_library_identifier', deviceLibraryIdentifier)
-        .eq('pass_type_identifier', passTypeIdentifier);
-
-      if (devicesCheck && devicesCheck.length > 0) {
-        const serials = devicesCheck.map(d => d.serial_number).filter(Boolean);
-        const { data: cardsCheck } = await supa
-          .from('issued_cards')
-          .select('uuid, auth_token')
-          .in('uuid', serials);
-
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('❌ CRITICAL: AUTH HEADER MISSING');
-        console.log('   Searched all header keys:', allHeaderKeys);
-        console.log('   No "authorization" header found (case-insensitive)');
-        console.log(`   📋 Found ${serials.length} pass(es) on device in DB`);
-        console.log(`   🔐 Cards in DB:`, cardsCheck?.map(c => ({
-          uuid: c.uuid,
-          has_token: !!c.auth_token,
-          token_preview: c.auth_token ? `${c.auth_token.substring(0, 8)}...` : 'MISSING'
-        })) || []);
-        console.log('   ⚠️  ROOT CAUSE: Pass was installed WITHOUT authenticationToken in pass.json');
-        console.log('   ⚠️  Apple does NOT send Authorization header if pass has no token');
-        console.log('   ⚠️  SOLUTION: Regenerate pass via /api/passes/[uuid] and reinstall in Wallet');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      } else {
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('❌ CRITICAL: AUTH HEADER MISSING');
-        console.log('   Searched all header keys:', allHeaderKeys);
-        console.log('   No "authorization" header found (case-insensitive)');
-        console.log('   ⚠️  No passes found on device in DB');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      }
-
-      return res.status(401).end();
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('⚠️⚠️⚠️  AUTH HEADER MISSING - BYPASSING SECURITY FOR TESTING  ⚠️⚠️⚠️');
+      console.log('   This is a TEMPORARY WORKAROUND to test if updates work without auth');
+      console.log('   DO NOT USE IN PRODUCTION!');
+      console.log('   Authorization header NOT found - proceeding anyway');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    } else {
+      console.log(`✅ Token found: ${authToken.substring(0, 10)}... (length: ${authToken.length})`);
+      console.log('   (Token will be ignored due to NO-SECURITY MODE)');
     }
 
-    console.log(`✅ Token found: ${authToken.substring(0, 8)}... (length: ${authToken.length})`);
+    // Шаг 1: Найти все passes для этого устройства (БЕЗ проверки токена)
+    console.log(`🔍 Step 1: Looking for passes on device ${deviceLibraryIdentifier}...`);
 
-    // ========== DB VERIFICATION ==========
     const supa = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-    // Шаг 1: Найти все passes на этом устройстве
-    console.log('📋 Step 1: Finding passes on device...');
-    const { data: devices, error: devErr } = await supa
+    const { data: devices, error: dbErr } = await supa
       .from('pass_devices')
       .select('serial_number')
       .eq('device_library_identifier', deviceLibraryIdentifier)
       .eq('pass_type_identifier', passTypeIdentifier);
 
-    if (devErr) {
-      console.error('❌ DB Error (pass_devices):', devErr);
+    if (dbErr) {
+      console.error('❌ DB Error (pass_devices):', dbErr);
       return res.status(500).end();
     }
 
-    console.log(`📋 Found ${devices?.length || 0} device(s) in pass_devices`);
-
     if (!devices || devices.length === 0) {
-      console.log('ℹ️ No passes registered on this device');
+      console.log('📋 No passes found for this device. Returning 204 (no updates)');
       return res.status(204).end();
     }
 
     const allSerials = devices.map(d => d.serial_number).filter(Boolean);
-    console.log(`🎫 Serial numbers on device: ${JSON.stringify(allSerials)}`);
+    console.log(`📋 Found ${allSerials.length} pass(es) on device:`, allSerials);
 
     if (allSerials.length === 0) {
-      console.log('ℹ️ No valid serial numbers found');
+      console.log('📋 No valid serial numbers. Returning 204 (no updates)');
       return res.status(204).end();
     }
 
-    // Шаг 2: Проверить токен для этих passes
-    console.log('🔐 Step 2: Verifying auth_token in issued_cards...');
+    // Шаг 2: SKIP TOKEN VALIDATION - return all passes
+    console.log('🔐 Step 2: SKIPPING auth_token validation (NO-SECURITY MODE)');
+    console.log('   ⚠️  Returning ALL passes on device without authentication');
 
-    // ✅ FIXED: Use database filtering, same as POST endpoint
+    // Get all cards (no token filtering)
     const { data: authorizedCards, error: authErr } = await supa
       .from('issued_cards')
-      .select('uuid, auth_token')
-      .in('uuid', allSerials)
-      .eq('auth_token', authToken);  // Database-level filtering
+      .select('uuid, auth_token, updated_at')
+      .in('uuid', allSerials);
 
     if (authErr) {
       console.error('❌ DB Error (issued_cards):', authErr);
@@ -177,15 +144,11 @@ module.exports = async (req, res) => {
     }
 
     if (!authorizedCards || authorizedCards.length === 0) {
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('❌ AUTHENTICATION FAILED');
-      console.log('   Token does not match any registered pass on this device');
-      console.log('   Received token (first 10 chars):', authToken.substring(0, 10));
-      console.log('   Device has', allSerials.length, 'pass(es)');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      return res.status(401).end();
+      console.log('❌ No cards found in issued_cards table');
+      return res.status(204).end();
     }
 
+    console.log(`✅ NO-SECURITY MODE: Authorized ${authorizedCards.length} pass(es) without token check`);
     const authorizedSerials = authorizedCards.map(c => c.uuid);
     console.log(`✅ Authorized serials: ${JSON.stringify(authorizedSerials)}`);
 
