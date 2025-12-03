@@ -76,11 +76,11 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
-  
+
   console.log('Dashboard render, activeTab:', activeTab);
-  
+
   // Отладочная информация
-  
+
   // Protection against null - show loading until user is ready
   if (!currentUser) {
     return (
@@ -89,7 +89,7 @@ const Dashboard = () => {
       </div>
     );
   }
-  
+
   // --- Автообновление баланса ---
   React.useEffect(() => {
     if (!autoUpdateBalance) return;
@@ -274,14 +274,14 @@ const Dashboard = () => {
     }
   };
 
-// И ЗАМЕНИТЕ ЕГО НА ЭТОТ
-const cardPreview = (
+  // И ЗАМЕНИТЕ ЕГО НА ЭТОТ
+  const cardPreview = (
     <div className="w-[340px] h-[480px] rounded-2xl shadow-lg flex flex-col overflow-hidden relative" style={{ background: bgColor }}>
       {/* Верхняя панель: логотип слева, баланс справа */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <div className="flex items-center gap-3">
           {logoUrl ? (
-            <img src={logoUrl} alt="logo" className="w-12 h-12 rounded bg-white/80 object-contain" style={{width:60, height:45}} />
+            <img src={logoUrl} alt="logo" className="w-12 h-12 rounded bg-white/80 object-contain" style={{ width: 60, height: 45 }} />
           ) : (
             <div className="w-12 h-12 rounded bg-white/20" />
           )}
@@ -315,78 +315,78 @@ const cardPreview = (
       )}
 
       {/* 👇 ЭТОТ БЛОК БЫЛ ВОССТАНОВЛЕН */}
-     <div className="flex flex-col items-center px-6 pb-4 mt-auto">
-  <div className="bg-white p-3 rounded border inline-flex">
-    <QRCode value={(placeholderUser[qrValue] || qrValue) ? `${window.location.origin}/api/passes/${placeholderUser[qrValue] || qrValue}` : ''} size={120} />
-  </div>
-  <div className="mt-1 text-xs text-center break-all" style={{ color: valueColor }}>
-    {placeholderUser[qrValue] || qrValue || ''}
-  </div>
-</div>
+      <div className="flex flex-col items-center px-6 pb-4 mt-auto">
+        <div className="bg-white p-3 rounded border inline-flex">
+          <QRCode value={(placeholderUser[qrValue] || qrValue) ? `${window.location.origin}/api/passes/${placeholderUser[qrValue] || qrValue}` : ''} size={120} />
+        </div>
+        <div className="mt-1 text-xs text-center break-all" style={{ color: valueColor }}>
+          {placeholderUser[qrValue] || qrValue || ''}
+        </div>
+      </div>
 
-    </div> 
-);
+    </div>
+  );
 
   // Функция для выдачи карты
   const handleIssueCard = async (card) => {
-  setIssueModal({ open: true, card, data: null, loading: true, error: null });
-  try {
-    // Генерируем uuid для карты
-    const uuid = crypto.randomUUID();
+    setIssueModal({ open: true, card, data: null, loading: true, error: null });
+    try {
+      // Генерируем uuid для карты
+      const uuid = crypto.randomUUID();
 
-    const { data, error } = await supabase
-      .from('issued_cards')
-      .insert([
-        {
-          user_id: currentUser.id,
-          card_template_id: card.id,
-          guest_name: issueGuestName || 'Имя клиента',
-          email: issueEmail || 'client@example.com',
-          phone: issuePhone || '+77001234567',
-          balance: 0,
-          max_uses: card.max_uses,
-          // В qr_value кладём payload, а не ссылку
-          qr_value: uuid,
-          uuid: uuid,
+      const { data, error } = await supabase
+        .from('issued_cards')
+        .insert([
+          {
+            user_id: currentUser.id,
+            card_template_id: card.id,
+            guest_name: issueGuestName || 'Имя клиента',
+            email: issueEmail || 'client@example.com',
+            phone: issuePhone || '+77001234567',
+            balance: 0,
+            max_uses: card.max_uses,
+            // В qr_value кладём payload, а не ссылку
+            qr_value: uuid,
+            uuid: uuid,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      const origin = window.location.origin;
+      const previewUrl = `${origin}/card/${uuid}`;
+      const pkpassUrl = `${origin}/api/passes/${uuid}`;
+
+      setIssueModal({
+        open: true,
+        card,
+        data: {
+          pkpassUrl,
+          qrUrl: previewUrl, // QR ведёт на страницу предпросмотра
         },
-      ])
-      .select()
-      .single();
-
-    if (error) throw new Error(error.message);
-
-    const origin = window.location.origin;
-    const previewUrl = `${origin}/card/${uuid}`;
-    const pkpassUrl = `${origin}/api/passes/${uuid}`;
-
-    setIssueModal({
-      open: true,
-      card,
-      data: {
-        pkpassUrl,
-        qrUrl: previewUrl, // QR ведёт на страницу предпросмотра
-      },
-      loading: false,
-      error: null,
-    });
-  } catch (e) {
-    setIssueModal({ open: true, card: null, data: null, loading: false, error: e.message });
-  }
-};
+        loading: false,
+        error: null,
+      });
+    } catch (e) {
+      setIssueModal({ open: true, card: null, data: null, loading: false, error: e.message });
+    }
+  };
 
   return (
     <div className="font-[Inter] bg-[#F1EFED] min-h-screen w-full">
       {/* HEADER */}
       <header className="w-full bg-white/80 sticky top-0 z-30 rounded-xl max-w-screen-xl mx-auto px-4 py-3 flex justify-between items-center mt-6 mb-8 shadow-sm">
         {/* Left: Logo and name */}
-        <div className="flex items-center gap-3 select-none cursor-pointer" onClick={handleGoHome}> 
+        <div className="flex items-center gap-3 select-none cursor-pointer" onClick={handleGoHome}>
           <img src={headerLogo} alt="Amian logo" className="h-12 w-12 object-contain" />
           <span className="text-[#121E1D] text-xl font-light font-[Inter]">Amian</span>
         </div>
-        
+
         {/* Center: Empty */}
         <div></div>
-        
+
         {/* Right: User name and logout */}
         <div className="flex items-center gap-4">
           <span
@@ -416,51 +416,46 @@ const cardPreview = (
             <nav className="space-y-2">
               <button
                 onClick={() => setActiveTab('cards')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${
-                  activeTab === 'cards' 
-                    ? 'bg-[#D1E889] text-[#121E1D]' 
+                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'cards'
+                    ? 'bg-[#D1E889] text-[#121E1D]'
                     : 'text-[#121E1D] hover:bg-[#D1E889]/20'
-                }`}
+                  }`}
               >
                 Карты
               </button>
               <button
                 onClick={() => setActiveTab('create')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${
-                  activeTab === 'create' 
-                    ? 'bg-[#D1E889] text-[#121E1D]' 
+                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'create'
+                    ? 'bg-[#D1E889] text-[#121E1D]'
                     : 'text-[#121E1D] hover:bg-[#D1E889]/20'
-                }`}
+                  }`}
               >
                 Создать карту
               </button>
               <button
-  onClick={() => setActiveTab('scans')}
-  className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${
-    activeTab === 'scans'
-      ? 'bg-[#D1E889] text-[#121E1D]'
-      : 'text-[#121E1D] hover:bg-[#D1E889]/20'
-  }`}
->
-  Сканы
-</button>
+                onClick={() => setActiveTab('scans')}
+                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'scans'
+                    ? 'bg-[#D1E889] text-[#121E1D]'
+                    : 'text-[#121E1D] hover:bg-[#D1E889]/20'
+                  }`}
+              >
+                Сканы
+              </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${
-                  activeTab === 'settings' 
-                    ? 'bg-[#D1E889] text-[#121E1D]' 
+                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'settings'
+                    ? 'bg-[#D1E889] text-[#121E1D]'
                     : 'text-[#121E1D] hover:bg-[#D1E889]/20'
-                }`}
+                  }`}
               >
                 Настройки
               </button>
               <button
                 onClick={() => setActiveTab('registration')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${
-                  activeTab === 'registration' 
-                    ? 'bg-[#D1E889] text-[#121E1D]' 
+                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'registration'
+                    ? 'bg-[#D1E889] text-[#121E1D]'
                     : 'text-[#121E1D] hover:bg-[#D1E889]/20'
-                }`}
+                  }`}
               >
                 Регистрация
               </button>
@@ -480,7 +475,7 @@ const cardPreview = (
                 <p className="text-[#232823] text-lg font-light">
                   Здесь будет список ваших цифровых карт лояльности.
                 </p>
-                
+
                 {/* Уведомление о неподтвержденном email */}
                 {currentUser && !currentUser.email_confirmed_at && (
                   <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -503,7 +498,7 @@ const cardPreview = (
                 <h2 className="text-2xl font-extralight text-[#121E1D] mb-6">
                   Ваши карты
                 </h2>
-                
+
                 {cards.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">🎫</div>
@@ -547,11 +542,11 @@ const cardPreview = (
               </div>
             </>
           )}
-{activeTab === 'scans' && (
-    <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-lg border border-white/50">
-      <ScanLogsList />
-    </div>
-  )}
+          {activeTab === 'scans' && (
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-lg border border-white/50">
+              <ScanLogsList />
+            </div>
+          )}
           {activeTab === 'registration' && (
             <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-lg border border-white/50">
               <RegistrationLinks />
@@ -561,20 +556,20 @@ const cardPreview = (
             <form className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-lg border border-white/50 flex gap-8" onSubmit={handleSubmit}>
               <div className="flex-1 min-w-[320px]">
                 <div className="flex gap-2 mb-6">
-                  <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab===0 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e=>{e.preventDefault();setCreateTab(0)}}>Лицевая сторона</button>
-                  <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab===1 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e=>{e.preventDefault();setCreateTab(1)}}>Обратная сторона</button>
-                  <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab===2 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e=>{e.preventDefault();setCreateTab(2)}}>Особенности</button>
+                  <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab === 0 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e => { e.preventDefault(); setCreateTab(0) }}>Лицевая сторона</button>
+                  <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab === 1 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e => { e.preventDefault(); setCreateTab(1) }}>Обратная сторона</button>
+                  <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab === 2 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e => { e.preventDefault(); setCreateTab(2) }}>Особенности</button>
                 </div>
                 {createTab === 0 && (
                   <>
                     <div className="mb-3">
                       <label htmlFor="internalName" className="block text-xs mb-1 font-medium text-[#232323] font-light"> Внутреннее название <span className="text-red-500">*</span></label>
-                      <input id="internalName" name="internalName" required value={internalName} onChange={e=>setInternalName(e.target.value)} placeholder="Внутреннее название шаблона (не видно клиенту)" className="w-full border rounded px-2 py-1 text-sm" />
+                      <input id="internalName" name="internalName" required value={internalName} onChange={e => setInternalName(e.target.value)} placeholder="Внутреннее название шаблона (не видно клиенту)" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
                       {errors.internalName && <div className="text-xs text-red-500 mt-1">{errors.internalName}</div>}
                     </div>
                     <div className="mb-3">
                       <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Название, которое увидят пользователи</label>
-                      <input value={userFacingName} onChange={e=>setUserFacingName(e.target.value)} placeholder="Название, которое увидит клиент в Wallet" className="w-full border rounded px-2 py-1 text-sm text-[#232323] pl-2" />
+                      <input value={userFacingName} onChange={e => setUserFacingName(e.target.value)} placeholder="Название, которое увидит клиент в Wallet" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
                     </div>
                     <div className="mb-3">
                       <label htmlFor="logoInput" className="block text-xs mb-1 font-medium text-[#232323] font-light">Загрузка логотипа</label>
@@ -592,15 +587,15 @@ const cardPreview = (
                     <div className="flex gap-4 mb-3">
                       <div>
                         <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Цвет фона</label>
-                        <input type="color" value={bgColor} onChange={e=>setBgColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
+                        <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
                       </div>
                       <div>
                         <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Цвет заголовков</label>
-                        <input type="color" value={labelColor} onChange={e=>setLabelColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
+                        <input type="color" value={labelColor} onChange={e => setLabelColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
                       </div>
                       <div>
                         <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Цвет значений</label>
-                        <input type="color" value={valueColor} onChange={e=>setValueColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
+                        <input type="color" value={valueColor} onChange={e => setValueColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
                       </div>
                     </div>
                     {/* Динамические поля временно убраны */}
@@ -610,7 +605,7 @@ const cardPreview = (
                         <select value={qrType} disabled className="border rounded px-2 py-1 text-xs">
                           <option value="qr">QR Code</option>
                         </select>
-                        <input value={qrValue} onChange={e=>setQrValue(e.target.value)} className="border rounded px-2 py-1 text-xs w-40" />
+                        <input value={qrValue} onChange={e => setQrValue(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-xs w-40 text-gray-900 bg-white placeholder-gray-400" />
                       </div>
                       <div className="text-[10px] text-gray-400 mt-1">По умолчанию: user.memberId</div>
                     </div>
@@ -620,20 +615,20 @@ const cardPreview = (
                   <>
                     <div className="mb-3">
                       <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Описание</label>
-                      <textarea maxLength={500} value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Описание, правила, условия..." className="w-full border rounded px-2 py-1 text-sm min-h-[60px] resize-vertical" />
+                      <textarea maxLength={500} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Описание, правила, условия..." className="w-full border border-gray-300 rounded px-2 py-1 text-sm min-h-[60px] resize-vertical text-gray-900 bg-white placeholder-gray-400" />
                     </div>
                     <div className="mb-3">
                       <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Контактный email</label>
-                      <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="mail@company.com" className="w-full border rounded px-2 py-1 text-sm" />
+                      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="mail@company.com" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
                       {errors.email && <div className="text-xs text-red-500 mt-1">{errors.email}</div>}
                     </div>
                     <div className="mb-3">
                       <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Телефон</label>
-                      <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+7 999 888-77-66" className="w-full border rounded px-2 py-1 text-sm" />
+                      <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+7 999 888-77-66" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
                     </div>
                     <div className="mb-3">
                       <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Сайт</label>
-                      <input type="url" value={site} onChange={e=>setSite(e.target.value)} placeholder="https://site.com" className="w-full border rounded px-2 py-1 text-sm" />
+                      <input type="url" value={site} onChange={e => setSite(e.target.value)} placeholder="https://site.com" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
                       {errors.site && <div className="text-xs text-red-500 mt-1">{errors.site}</div>}
                     </div>
                   </>
@@ -642,31 +637,31 @@ const cardPreview = (
                   <>
                     <button type="button" className="mb-2 bg-[#D1E889] text-[#121E1D] rounded px-3 py-1 text-xs" onClick={() => handleAddBonus(10)}>+10 к балансу (тест)</button>
                     <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
-                      <input type="checkbox" checked={autoUpdateBalance} onChange={e=>setAutoUpdateBalance(e.target.checked)} />
+                      <input type="checkbox" checked={autoUpdateBalance} onChange={e => setAutoUpdateBalance(e.target.checked)} />
                       Автоматическое обновление баланса
                     </label>
                     <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
-                      <input type="checkbox" checked={expires} onChange={e=>setExpires(e.target.checked)} />
+                      <input type="checkbox" checked={expires} onChange={e => setExpires(e.target.checked)} />
                       Срок действия карты
                     </label>
                     {expires && (
                       <div className="pl-6 mb-2">
                         <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Срок действия до:</label>
-                        <input type="date" value={expiresAt} onChange={e=>setExpiresAt(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+                        <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white" />
                       </div>
                     )}
                     <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
-                      <input type="checkbox" checked={notifyOnUse} onChange={e=>setNotifyOnUse(e.target.checked)} />
+                      <input type="checkbox" checked={notifyOnUse} onChange={e => setNotifyOnUse(e.target.checked)} />
                       Оповещение при использовании
                     </label>
                     <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
-                      <input type="checkbox" checked={limitUses} onChange={e=>setLimitUses(e.target.checked)} />
+                      <input type="checkbox" checked={limitUses} onChange={e => setLimitUses(e.target.checked)} />
                       Ограничить количество использований
                     </label>
                     {limitUses && (
                       <div className="pl-6 mb-2">
                         <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Максимум использований:</label>
-                        <input type="number" min={1} value={maxUses} onChange={e=>setMaxUses(e.target.value)} className="border rounded px-2 py-1 text-sm w-24" />
+                        <input type="number" min={1} value={maxUses} onChange={e => setMaxUses(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm w-24 text-gray-900 bg-white" />
                       </div>
                     )}
                   </>
@@ -680,7 +675,7 @@ const cardPreview = (
                         <span role="img" aria-label="user">👤</span> Имя клиента
                       </label>
                       <input
-                        className="border rounded px-2 py-1 w-full text-black text-sm"
+                        className="border border-gray-300 rounded px-2 py-1 w-full text-gray-900 bg-white placeholder-gray-400 text-sm"
                         value={guestName}
                         onChange={e => setGuestName(e.target.value)}
                         placeholder="Например, Илон Маск"
@@ -692,7 +687,7 @@ const cardPreview = (
                         <span role="img" aria-label="bonus">🎁</span> Бонус (%)
                       </label>
                       <input
-                        className="border rounded px-2 py-1 w-full text-black text-sm"
+                        className="border border-gray-300 rounded px-2 py-1 w-full text-gray-900 bg-white placeholder-gray-400 text-sm"
                         type="number"
                         min={0}
                         max={100}
@@ -705,12 +700,12 @@ const cardPreview = (
                   </div>
                 )}
                 {/* --- конец блока конструктора --- */}
-                <button 
-                  type="submit" 
-                  className="mt-6 bg-[#121e1d] text-white py-2 rounded text-sm w-full disabled:opacity-50" 
+                <button
+                  type="submit"
+                  className="mt-6 bg-[#121e1d] text-white py-2 rounded text-sm w-full disabled:opacity-50"
                   disabled={loading}
                 >
-                  Создать карту (loading: {loading ? 'true' : 'false'})
+                  {loading ? 'Создание...' : 'Создать карту'}
                 </button>
                 {errors.api && <div className="mt-2 text-center text-red-600 text-sm">{errors.api}</div>}
                 {msg && <div className="mt-2 text-center text-green-600 text-sm">{msg}</div>}
@@ -738,14 +733,14 @@ const cardPreview = (
             {!issueModal.data && !issueModal.loading && (
               <form onSubmit={async (e) => { e.preventDefault(); await handleIssueCard(issueModal.card); }} className="flex flex-col gap-4 mb-4">
                 <input
-                  className="border rounded px-2 py-1 w-full text-black text-sm"
+                  className="border border-gray-300 rounded px-2 py-1 w-full text-gray-900 bg-white placeholder-gray-400 text-sm"
                   value={issueGuestName}
                   onChange={e => setIssueGuestName(e.target.value)}
                   placeholder="Имя клиента"
                   required
                 />
                 <input
-                  className="border rounded px-2 py-1 w-full text-black text-sm"
+                  className="border border-gray-300 rounded px-2 py-1 w-full text-gray-900 bg-white placeholder-gray-400 text-sm"
                   value={issueEmail}
                   onChange={e => setIssueEmail(e.target.value)}
                   placeholder="Email клиента"
@@ -753,7 +748,7 @@ const cardPreview = (
                   required
                 />
                 <input
-                  className="border rounded px-2 py-1 w-full text-black text-sm"
+                  className="border border-gray-300 rounded px-2 py-1 w-full text-gray-900 bg-white placeholder-gray-400 text-sm"
                   value={issuePhone}
                   onChange={e => setIssuePhone(e.target.value)}
                   placeholder="Телефон клиента"

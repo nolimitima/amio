@@ -142,7 +142,7 @@ const Scanner = () => {
         <input
           type="tel"
           placeholder="Введите номер телефона (7...)"
-          className="flex-1 border rounded px-2 py-1"
+          className="flex-1 border border-gray-300 rounded px-2 py-1 text-gray-900 bg-white placeholder-gray-400"
           value={manual}
           onChange={(e) => setManual(e.target.value)}
         />

@@ -54,18 +54,21 @@ export default function ScanLogsList() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-extralight text-[#121E1D]">Сканы</h2>
+        <a href="/scanner" className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-light transition-all duration-200 shadow-md flex items-center gap-2">
+          📷 Открыть Сканер
+        </a>
       </div>
 
       {/* Фильтры */}
       <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-4">
         <input
-          className="border rounded px-2 py-1 text-sm md:col-span-2"
+          className="border border-gray-300 rounded px-2 py-1 text-sm md:col-span-2 text-gray-900 bg-white placeholder-gray-400"
           placeholder="Поиск: гость, UUID, карта"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <select
-          className="border rounded px-2 py-1 text-sm"
+          className="border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white"
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value)}
         >
@@ -76,13 +79,13 @@ export default function ScanLogsList() {
         </select>
         <input
           type="date"
-          className="border rounded px-2 py-1 text-sm"
+          className="border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
         />
         <input
           type="date"
-          className="border rounded px-2 py-1 text-sm"
+          className="border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
         />
