@@ -2,22 +2,27 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { useAuth } from "../context/AuthContext.jsx";
+import { supabase } from "../supabaseClient.js";
 
 const Scanner = () => {
   const { currentUser } = useAuth();
-  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState("");
 
-  // ✅ ИЗМЕНЕНИЕ 1: Добавлено новое состояние для отслеживания обновления
-  const [isUpdating, setIsUpdating] = useState(false);
+  // Terminal Modal State
+  const [showTerminal, setShowTerminal] = useState(false);
+  const [scannedCard, setScannedCard] = useState(null);
+  const [billAmount, setBillAmount] = useState("");
+  const [usePoints, setUsePoints] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const [cashbackPercent, setCashbackPercent] = useState(5); // default
 
   const readerId = "qr-reader";
   const scannerRef = useRef(null);
 
   useEffect(() => {
-    // Эта логика остается без изменений
     if (scanning) {
       scannerRef.current = new Html5Qrcode(readerId);
       scannerRef.current
@@ -26,7 +31,6 @@ const Scanner = () => {
           { fps: 10, qrbox: { width: 250, height: 250 } },
           async (decodedText) => {
             await handleScan(decodedText);
-            stopScanner();
           }
         )
         .catch((err) => {
@@ -51,29 +55,56 @@ const Scanner = () => {
     setScanning(false);
   };
 
-  // ✅ ИЗМЕНЕНИЕ 2: Функция handleScan теперь не сбрасывает результат при обновлении
-  const handleScan = async (qrValue, extra = {}) => {
-    const isUpdateAction = extra.action === 'redeem' || extra.action === 'add_bonus';
-
-    // Если это действие обновления, ставим флаг и НЕ сбрасываем результат
-    if (isUpdateAction) {
-      setIsUpdating(true);
-    } else {
-      // А если это новый скан, то сбрасываем все, как и раньше
-      setError(null);
-      setResult(null);
-    }
+  // Fetch client card data and open Terminal modal
+  const handleScan = async (qrValue) => {
+    setError(null);
 
     try {
-      // Build request body based on whether we have qr_value or phone
+      // Fetch card by UUID using the old scan endpoint (just to get card data)
+      const res = await fetch("/api/scanner/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          qr_value: qrValue,
+          operator_id: currentUser?.id || null,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Карта не найдена");
+
+      // Pause scanner and open Terminal modal
+      if (scannerRef.current) {
+        scannerRef.current.pause();
+      }
+
+      setScannedCard(data.card);
+      setShowTerminal(true);
+      setBillAmount("");
+      setUsePoints(false);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleManualSubmit = async (e) => {
+    e.preventDefault();
+    const trimmedInput = manual.trim();
+    if (!trimmedInput) return;
+
+    // Strip spaces and check if it looks like a phone number
+    const strippedInput = trimmedInput.replace(/\s+/g, "");
+    const isPhone = /^\d+$/.test(strippedInput);
+
+    try {
       const body = {
         operator_id: currentUser?.id || null,
-        ...extra,
       };
 
-      // Add either qr_value or phone (phone comes from extra)
-      if (qrValue) {
-        body.qr_value = qrValue;
+      if (isPhone) {
+        body.phone = strippedInput;
+      } else {
+        body.qr_value = strippedInput;
       }
 
       const res = await fetch("/api/scanner/scan", {
@@ -83,37 +114,109 @@ const Scanner = () => {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Ошибка сканирования");
+      if (!res.ok) throw new Error(data.error || "Карта не найдена");
 
-      // Устанавливаем результат с новыми данными от сервера
-      setResult(data.card);
+      setScannedCard(data.card);
+      setShowTerminal(true);
+      setBillAmount("");
+      setUsePoints(false);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleProcessPayment = async () => {
+    if (!billAmount || parseFloat(billAmount) <= 0) {
+      setError("Введите сумму покупки");
+      return;
+    }
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      // Get JWT token from Supabase session
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        throw new Error("Не авторизован. Пожалуйста, войдите снова.");
+      }
+
+      const token = sessionData.session.access_token;
+
+      // Call the secure /api/transaction endpoint
+      const res = await fetch("/api/transaction", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          client_id: scannedCard.uuid,
+          amount: parseFloat(billAmount),
+          action: usePoints ? "redeem" : "accrue",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка обработки");
+
+      // Update scanned card with new balance
+      setScannedCard({ ...scannedCard, balance: data.new_balance });
+
+      // Show success notification
+      const message = usePoints
+        ? `Списано ${Math.abs(data.points_change)} бонусов`
+        : `Начислено +${data.points_change} бонусов`;
+
+      setNotification({ type: "success", message });
+
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowTerminal(false);
+        setNotification(null);
+        setScannedCard(null);
+        // Resume camera if it was scanning
+        if (scannerRef.current) {
+          scannerRef.current.resume();
+        }
+      }, 2000);
+
     } catch (err) {
       setError(err.message);
     } finally {
-      // В любом случае убираем флаг обновления
-      if (isUpdateAction) {
-        setIsUpdating(false);
-      }
+      setProcessing(false);
     }
   };
 
-  const handleManualSubmit = async (e) => {
-    e.preventDefault();
-    const trimmedInput = manual.trim();
-    if (!trimmedInput) return;
+  const handleCloseTerminal = () => {
+    setShowTerminal(false);
+    setScannedCard(null);
+    setError(null);
+    // Resume camera
+    if (scannerRef.current) {
+      scannerRef.current.resume();
+    }
+  };
 
-    // Strip spaces and check if it looks like a phone number (mostly digits)
-    const strippedInput = trimmedInput.replace(/\s+/g, '');
-    const isPhone = /^\d+$/.test(strippedInput);
+  // Calculate points or payment amount in real-time
+  const calculateResult = () => {
+    const amount = parseFloat(billAmount) || 0;
+    if (amount <= 0) return null;
 
-    if (isPhone) {
-      // Send as phone parameter
-      await handleScan('', { phone: strippedInput });
+    if (usePoints) {
+      // Redeem mode: amount - points (1 point = 1 currency)
+      const balance = scannedCard?.balance || 0;
+      const toPay = Math.max(0, amount - balance);
+      return { type: "redeem", value: toPay, label: "К оплате" };
     } else {
-      // Send as qr_value (UUID)
-      await handleScan(strippedInput);
+      // Accrue mode: calculate points from amount
+      const points = Math.floor(amount * cashbackPercent / 100);
+      return { type: "accrue", value: points, label: "Будет начислено" };
     }
   };
+
+  const calculation = calculateResult();
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white shadow rounded-xl">
@@ -153,53 +256,86 @@ const Scanner = () => {
 
       {error && <div className="text-red-600 text-sm mb-3">❌ {error}</div>}
 
-      {result && (
-        <div className="p-3 border rounded bg-green-50">
-          <h2 className="font-medium mb-2">✅ Карта найдена</h2>
-          <div>
-            <b>Гость:</b> {result.guest_name}
-          </div>
-          <div>
-            <b>Баланс:</b> {result.balance} B
-          </div>
-          {result.email && (
-            <div>
-              <b>Email:</b> {result.email}
-            </div>
-          )}
-          {result.phone && (
-            <div>
-              <b>Телефон:</b> {result.phone}
-            </div>
-          )}
+      {/* Terminal Modal */}
+      {showTerminal && scannedCard && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold mb-4 text-center">💳 POS Терминал</h2>
 
-          {/* ✅ ИЗМЕНЕНИЕ 3: Кнопки теперь блокируются и показывают статус загрузки */}
-          <div className="flex gap-2 mt-3">
-            <button
-              className="px-3 py-1 rounded bg-red-600 text-white disabled:opacity-50"
-              disabled={isUpdating}
-              onClick={() =>
-                handleScan(result.uuid || manual, {
-                  action: "redeem",
-                  amount: 10,
-                })
-              }
-            >
-              {isUpdating ? '...' : '−10 B'}
-            </button>
+            {/* Client Info */}
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <div className="text-lg font-semibold">{scannedCard.guest_name}</div>
+              <div className="text-sm text-gray-600">
+                Баланс: <span className="font-bold text-blue-600">{scannedCard.balance} B</span>
+              </div>
+            </div>
 
-            <button
-              className="px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-50"
-              disabled={isUpdating}
-              onClick={() =>
-                handleScan(result.uuid || manual, {
-                  action: "add_bonus",
-                  amount: 10,
-                })
-              }
-            >
-              {isUpdating ? '...' : '+10 B'}
-            </button>
+            {/* Amount Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Сумма покупки</label>
+              <input
+                type="number"
+                placeholder="0"
+                className="w-full text-3xl border-2 border-gray-300 rounded-lg px-4 py-3 text-center font-bold focus:border-blue-500 focus:outline-none"
+                value={billAmount}
+                onChange={(e) => setBillAmount(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            {/* Redeem Toggle */}
+            <div className="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+              <span className="font-medium">Списать бонусы</span>
+              <button
+                type="button"
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${usePoints ? "bg-blue-600" : "bg-gray-300"
+                  }`}
+                onClick={() => setUsePoints(!usePoints)}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${usePoints ? "translate-x-6" : "translate-x-1"
+                    }`}
+                />
+              </button>
+            </div>
+
+            {/* Real-time Calculation */}
+            {calculation && (
+              <div className={`mb-4 p-4 rounded-lg text-center ${calculation.type === 'accrue' ? 'bg-green-50 border-2 border-green-300' : 'bg-orange-50 border-2 border-orange-300'
+                }`}>
+                <div className="text-sm text-gray-600">{calculation.label}:</div>
+                <div className={`text-3xl font-bold ${calculation.type === 'accrue' ? 'text-green-600' : 'text-orange-600'
+                  }`}>
+                  {calculation.type === 'accrue' ? '+' : ''}{calculation.value} {calculation.type === 'accrue' ? 'B' : '₸'}
+                </div>
+              </div>
+            )}
+
+            {/* Notification */}
+            {notification && (
+              <div className={`mb-4 p-3 rounded-lg text-center font-medium ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                ✓ {notification.message}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50"
+                onClick={handleCloseTerminal}
+                disabled={processing}
+              >
+                Отмена
+              </button>
+              <button
+                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+                onClick={handleProcessPayment}
+                disabled={processing || !billAmount}
+              >
+                {processing ? "Обработка..." : "Провести оплату"}
+              </button>
+            </div>
           </div>
         </div>
       )}
