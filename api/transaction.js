@@ -139,17 +139,11 @@ module.exports = async (req, res) => {
             points_change = Math.floor(amount * cashback_percent / 100);
             new_balance = card.balance + points_change;
         } else if (action === 'redeem') {
-            // Redeem: 1 point = 1 currency unit
-            // Check if user has enough points
-            if (card.balance < amount) {
-                return res.status(400).json({
-                    error: 'Insufficient points',
-                    available: card.balance,
-                    requested: amount
-                });
-            }
-            points_change = -amount; // negative for redemption
-            new_balance = card.balance - amount;
+            // Redeem: use all available points (up to bill amount)
+            // 1 point = 1 currency unit
+            const points_to_redeem = Math.min(card.balance, amount);
+            points_change = -points_to_redeem; // negative for redemption
+            new_balance = card.balance - points_to_redeem;
         }
 
         // 4. Update the card balance
