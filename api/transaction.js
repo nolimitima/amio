@@ -2,7 +2,7 @@
 // Vercel Serverless Function for POS Terminal transactions
 
 const { createClient } = require('@supabase/supabase-js');
-const apnProvider = require('../../lib/apn');
+const apnProvider = require('../lib/apn');
 const apn = require('node-apn');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
