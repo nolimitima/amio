@@ -9,3 +9,10 @@
 coverage
 *.log
 .vercel
+
+# Security: Certificate files and private keys
+*.p12
+*.pem
+*.key
+*.crt
+*.pfx
