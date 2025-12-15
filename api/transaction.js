@@ -89,11 +89,17 @@ module.exports = async (req, res) => {
         // Parse and validate request body
         const { client_id, amount, action } = req.body || {};
 
+        console.log('Transaction request:', { client_id, amount, action, amount_type: typeof amount });
+
         if (!client_id) {
             return res.status(400).json({ error: 'Missing required field: client_id' });
         }
 
-        if (!amount || typeof amount !== 'number' || amount <= 0) {
+        // Convert amount to number if it's a string
+        const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+        if (!numAmount || typeof numAmount !== 'number' || isNaN(numAmount) || numAmount <= 0) {
+            console.error('Invalid amount:', { amount, numAmount, type: typeof amount });
             return res.status(400).json({ error: 'Invalid amount: must be a positive number' });
         }
 
@@ -139,13 +145,13 @@ module.exports = async (req, res) => {
         // 3. Process the transaction based on action
         if (action === 'accrue') {
             // Calculate points: floor(amount * cashback_percent / 100)
-            points_change = Math.floor(amount * cashback_percent / 100);
+            points_change = Math.floor(numAmount * cashback_percent / 100);
             new_balance = card.balance + points_change;
         } else if (action === 'redeem') {
             // Redeem: use all available points (up to bill amount)
             // 1 point = 1 currency unit
-            const points_to_redeem = Math.min(card.balance, amount);
-            const cash_remainder = amount - points_to_redeem;
+            const points_to_redeem = Math.min(card.balance, numAmount);
+            const cash_remainder = numAmount - points_to_redeem;
 
             // Earn cashback on the cash portion
             const earned_points = Math.floor(cash_remainder * cashback_percent / 100);
@@ -172,7 +178,7 @@ module.exports = async (req, res) => {
             .insert([{
                 user_id: client_id,
                 cashier_id: cashier_id,
-                amount: amount,
+                amount: numAmount,
                 points_change: points_change,
                 type: action
             }]);
