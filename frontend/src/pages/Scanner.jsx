@@ -60,10 +60,10 @@ const Scanner = () => {
     setError(null);
 
     try {
-      // Fetch card WITH template cashback info
+      // Fetch card WITH template bonus info
       const { data: cardData, error: cardError } = await supabase
         .from('issued_cards')
-        .select('uuid, guest_name, balance, email, phone, card_template_id, card_templates(cashback_percent)')
+        .select('uuid, guest_name, balance, email, phone, card_template_id, card_templates(bonus_percent_field)')
         .eq('uuid', qrValue)
         .single();
 
@@ -76,8 +76,15 @@ const Scanner = () => {
         .limit(1)
         .single();
 
-      // Use card-specific cashback if exists, else global
-      const percent = cardData.card_templates?.cashback_percent ?? settings?.cashback_percent ?? 5;
+      // Use card-specific bonus_percent_field if exists, else global
+      // Parse bonus_percent_field as integer (stored as string)
+      let percent = settings?.cashback_percent ?? 5;
+      if (cardData.card_templates?.bonus_percent_field) {
+        const parsed = parseInt(cardData.card_templates.bonus_percent_field, 10);
+        if (!isNaN(parsed)) {
+          percent = parsed;
+        }
+      }
       setCashbackPercent(percent);
 
       // Pause scanner and open Terminal modal
@@ -104,10 +111,10 @@ const Scanner = () => {
     const isPhone = /^\d+$/.test(strippedInput);
 
     try {
-      // Fetch card WITH template cashback info
+      // Fetch card WITH template bonus info
       const { data: cardData, error: cardError } = await supabase
         .from('issued_cards')
-        .select('uuid, guest_name, balance, email, phone, card_template_id, card_templates(cashback_percent)')
+        .select('uuid, guest_name, balance, email, phone, card_template_id, card_templates(bonus_percent_field)')
         .or(isPhone ? `phone.eq.${strippedInput}` : `uuid.eq.${strippedInput}`)
         .single();
 
@@ -120,8 +127,14 @@ const Scanner = () => {
         .limit(1)
         .single();
 
-      // Use card-specific cashback if exists, else global
-      const percent = cardData.card_templates?.cashback_percent ?? settings?.cashback_percent ?? 5;
+      // Use card-specific bonus_percent_field if exists, else global
+      let percent = settings?.cashback_percent ?? 5;
+      if (cardData.card_templates?.bonus_percent_field) {
+        const parsed = parseInt(cardData.card_templates.bonus_percent_field, 10);
+        if (!isNaN(parsed)) {
+          percent = parsed;
+        }
+      }
       setCashbackPercent(percent);
 
       setScannedCard(cardData);

@@ -127,10 +127,10 @@ module.exports = async (req, res) => {
         const globalCashbackPercent = settings.cashback_percent;
         console.log('Global cashback percent:', globalCashbackPercent);
 
-        // 2. Fetch the client's card WITH template cashback info
+        // 2. Fetch the client's card WITH template bonus info
         const { data: card, error: cardError } = await serviceSupabase
             .from('issued_cards')
-            .select('uuid, guest_name, balance, card_template_id, card_templates(cashback_percent)')
+            .select('uuid, guest_name, balance, card_template_id, card_templates(bonus_percent_field)')
             .eq('uuid', client_id)
             .single();
 
@@ -146,8 +146,17 @@ module.exports = async (req, res) => {
 
         console.log('Card fetched successfully:', { uuid: card.uuid, has_template: !!card.card_templates });
 
-        // Use card-specific cashback if exists, else global
-        const cashback_percent = card.card_templates?.cashback_percent ?? globalCashbackPercent;
+        // Use card-specific bonus_percent_field if exists, else global
+        // Parse bonus_percent_field as integer (it's stored as string like "0", "5", "10")
+        let cashback_percent = globalCashbackPercent;
+        if (card.card_templates?.bonus_percent_field) {
+            const parsed = parseInt(card.card_templates.bonus_percent_field, 10);
+            if (!isNaN(parsed)) {
+                cashback_percent = parsed;
+            }
+        }
+
+        console.log('Using cashback percent:', cashback_percent);
 
         let points_change = 0;
         let new_balance = card.balance;
