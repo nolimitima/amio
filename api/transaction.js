@@ -118,22 +118,11 @@ module.exports = async (req, res) => {
             auth: { persistSession: false }
         });
 
-        // 1. Fetch cashback percentage from app_settings
-        const { data: settings, error: settingsError } = await serviceSupabase
-            .from('app_settings')
-            .select('cashback_percent')
-            .limit(1)
-            .single();
+        // Hardcoded fallback if card template has no bonus_percent_field
+        // (This should rarely be used since all templates have bonus_percent_field)
+        const FALLBACK_CASHBACK_PERCENT = 0;
 
-        if (settingsError || !settings) {
-            console.error('Settings fetch error:', settingsError);
-            return res.status(500).json({ error: 'Failed to fetch app settings', detail: settingsError?.message });
-        }
-
-        const globalCashbackPercent = settings.cashback_percent;
-        console.log('Global cashback percent:', globalCashbackPercent);
-
-        // 2. Fetch the client's card WITH template bonus info
+        // Fetch the client's card WITH template bonus info
         const { data: card, error: cardError } = await serviceSupabase
             .from('issued_cards')
             .select('uuid, guest_name, balance, card_template_id, card_templates(bonus_percent_field)')
@@ -152,9 +141,9 @@ module.exports = async (req, res) => {
 
         console.log('Card fetched successfully:', { uuid: card.uuid, has_template: !!card.card_templates });
 
-        // Use card-specific bonus_percent_field if exists, else global
+        // Use card-specific bonus_percent_field if exists, else fallback
         // Parse bonus_percent_field as integer (it's stored as string like "0", "5", "10")
-        let cashback_percent = globalCashbackPercent;
+        let cashback_percent = FALLBACK_CASHBACK_PERCENT;
         if (card.card_templates?.bonus_percent_field) {
             const parsed = parseInt(card.card_templates.bonus_percent_field, 10);
             if (!isNaN(parsed)) {

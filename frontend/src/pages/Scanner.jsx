@@ -72,16 +72,12 @@ const Scanner = () => {
 
       if (cardError || !cardData) throw new Error("Карта не найдена");
 
-      // Fetch global settings as fallback
-      const { data: settings } = await supabase
-        .from('app_settings')
-        .select('cashback_percent')
-        .limit(1)
-        .single();
+      // Hardcoded fallback if card template has no bonus_percent_field
+      const FALLBACK_PERCENT = 0;
 
-      // Use card-specific bonus_percent_field if exists, else global
+      // Use card-specific bonus_percent_field if exists, else fallback
       // Parse bonus_percent_field as integer (stored as string)
-      let percent = settings?.cashback_percent ?? 5;
+      let percent = FALLBACK_PERCENT;
       if (cardData.card_templates?.bonus_percent_field) {
         const parsed = parseInt(cardData.card_templates.bonus_percent_field, 10);
         if (!isNaN(parsed)) {
@@ -123,15 +119,11 @@ const Scanner = () => {
 
       if (cardError || !cardData) throw new Error("Карта не найдена");
 
-      // Fetch global settings as fallback
-      const { data: settings } = await supabase
-        .from('app_settings')
-        .select('cashback_percent')
-        .limit(1)
-        .single();
+      // Hardcoded fallback if card template has no bonus_percent_field
+      const FALLBACK_PERCENT = 0;
 
-      // Use card-specific bonus_percent_field if exists, else global
-      let percent = settings?.cashback_percent ?? 5;
+      // Use card-specific bonus_percent_field if exists, else fallback
+      let percent = FALLBACK_PERCENT;
       if (cardData.card_templates?.bonus_percent_field) {
         const parsed = parseInt(cardData.card_templates.bonus_percent_field, 10);
         if (!isNaN(parsed)) {
