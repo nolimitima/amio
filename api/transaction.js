@@ -120,10 +120,12 @@ module.exports = async (req, res) => {
             .single();
 
         if (settingsError || !settings) {
-            return res.status(500).json({ error: 'Failed to fetch app settings' });
+            console.error('Settings fetch error:', settingsError);
+            return res.status(500).json({ error: 'Failed to fetch app settings', detail: settingsError?.message });
         }
 
         const globalCashbackPercent = settings.cashback_percent;
+        console.log('Global cashback percent:', globalCashbackPercent);
 
         // 2. Fetch the client's card WITH template cashback info
         const { data: card, error: cardError } = await serviceSupabase
@@ -132,9 +134,17 @@ module.exports = async (req, res) => {
             .eq('uuid', client_id)
             .single();
 
-        if (cardError || !card) {
+        if (cardError) {
+            console.error('Card fetch error:', cardError);
+            return res.status(404).json({ error: 'Client card not found', detail: cardError.message });
+        }
+
+        if (!card) {
+            console.error('Card not found for client_id:', client_id);
             return res.status(404).json({ error: 'Client card not found' });
         }
+
+        console.log('Card fetched successfully:', { uuid: card.uuid, has_template: !!card.card_templates });
 
         // Use card-specific cashback if exists, else global
         const cashback_percent = card.card_templates?.cashback_percent ?? globalCashbackPercent;
