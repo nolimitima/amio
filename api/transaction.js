@@ -9,6 +9,12 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE;
 const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER;
 
+// Helper: Smart Rounding (max 2 decimals, no trailing zeros)
+// 64.525 → 64.53, 700.00 → 700
+function smartRound(value) {
+    return Math.round(value * 100) / 100;
+}
+
 // Helper: Send PassKit push notification to update the pass
 async function sendPasskitPush(serialNumber) {
     try {
@@ -163,21 +169,21 @@ module.exports = async (req, res) => {
 
         // 3. Process the transaction based on action
         if (action === 'accrue') {
-            // Calculate points: floor(amount * cashback_percent / 100)
-            points_change = Math.floor(numAmount * cashback_percent / 100);
-            new_balance = card.balance + points_change;
+            // Calculate points with decimal precision
+            points_change = smartRound(numAmount * cashback_percent / 100);
+            new_balance = smartRound(card.balance + points_change);
         } else if (action === 'redeem') {
             // Redeem: use all available points (up to bill amount)
             // 1 point = 1 currency unit
-            const points_to_redeem = Math.min(card.balance, numAmount);
-            const cash_remainder = numAmount - points_to_redeem;
+            const points_to_redeem = smartRound(Math.min(card.balance, numAmount));
+            const cash_remainder = smartRound(numAmount - points_to_redeem);
 
             // Earn cashback on the cash portion
-            const earned_points = Math.floor(cash_remainder * cashback_percent / 100);
+            const earned_points = smartRound(cash_remainder * cashback_percent / 100);
 
             // Net change: earned - redeemed
-            points_change = earned_points - points_to_redeem;
-            new_balance = card.balance + points_change;
+            points_change = smartRound(earned_points - points_to_redeem);
+            new_balance = smartRound(card.balance + points_change);
         }
 
         // 4. Update the card balance

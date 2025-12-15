@@ -4,6 +4,9 @@ import { Html5Qrcode } from "html5-qrcode";
 import { useAuth } from "../context/AuthContext.jsx";
 import { supabase } from "../supabaseClient.js";
 
+// Helper: Smart Rounding (max 2 decimals, no trailing zeros)
+const smartRound = (value) => Math.round(value * 100) / 100;
+
 const Scanner = () => {
   const { currentUser } = useAuth();
   const [error, setError] = useState(null);
@@ -228,10 +231,10 @@ const Scanner = () => {
     if (usePoints) {
       // Redeem mode: use points and earn cashback on cash remainder
       const balance = scannedCard?.balance || 0;
-      const points_to_redeem = Math.min(balance, amount);
-      const cash_remainder = amount - points_to_redeem;
-      const earned_points = Math.floor(cash_remainder * cashbackPercent / 100);
-      const net_change = earned_points - points_to_redeem;
+      const points_to_redeem = smartRound(Math.min(balance, amount));
+      const cash_remainder = smartRound(amount - points_to_redeem);
+      const earned_points = smartRound(cash_remainder * cashbackPercent / 100);
+      const net_change = smartRound(earned_points - points_to_redeem);
 
       return {
         type: "redeem",
@@ -241,8 +244,8 @@ const Scanner = () => {
         netChange: net_change
       };
     } else {
-      // Accrue mode: calculate points from amount
-      const points = Math.floor(amount * cashbackPercent / 100);
+      // Accrue mode: calculate points from amount with decimal precision
+      const points = smartRound(amount * cashbackPercent / 100);
       return { type: "accrue", value: points, label: "Будет начислено" };
     }
   };
@@ -306,6 +309,7 @@ const Scanner = () => {
               <label className="block text-sm font-medium mb-2">Сумма покупки</label>
               <input
                 type="number"
+                step="0.01"
                 placeholder="0"
                 className="w-full text-3xl border-2 border-gray-300 rounded-lg px-4 py-3 text-center font-bold focus:border-blue-500 focus:outline-none"
                 value={billAmount}
