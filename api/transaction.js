@@ -117,18 +117,21 @@ module.exports = async (req, res) => {
             return res.status(500).json({ error: 'Failed to fetch app settings' });
         }
 
-        const cashback_percent = settings.cashback_percent;
+        const globalCashbackPercent = settings.cashback_percent;
 
-        // 2. Fetch the client's card
+        // 2. Fetch the client's card WITH template cashback info
         const { data: card, error: cardError } = await serviceSupabase
             .from('issued_cards')
-            .select('uuid, guest_name, balance')
+            .select('uuid, guest_name, balance, card_template_id, card_templates(cashback_percent)')
             .eq('uuid', client_id)
             .single();
 
         if (cardError || !card) {
             return res.status(404).json({ error: 'Client card not found' });
         }
+
+        // Use card-specific cashback if exists, else global
+        const cashback_percent = card.card_templates?.cashback_percent ?? globalCashbackPercent;
 
         let points_change = 0;
         let new_balance = card.balance;
@@ -142,8 +145,14 @@ module.exports = async (req, res) => {
             // Redeem: use all available points (up to bill amount)
             // 1 point = 1 currency unit
             const points_to_redeem = Math.min(card.balance, amount);
-            points_change = -points_to_redeem; // negative for redemption
-            new_balance = card.balance - points_to_redeem;
+            const cash_remainder = amount - points_to_redeem;
+
+            // Earn cashback on the cash portion
+            const earned_points = Math.floor(cash_remainder * cashback_percent / 100);
+
+            // Net change: earned - redeemed
+            points_change = earned_points - points_to_redeem;
+            new_balance = card.balance + points_change;
         }
 
         // 4. Update the card balance

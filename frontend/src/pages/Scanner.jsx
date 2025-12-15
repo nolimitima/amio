@@ -60,25 +60,32 @@ const Scanner = () => {
     setError(null);
 
     try {
-      // Fetch card by UUID using the old scan endpoint (just to get card data)
-      const res = await fetch("/api/scanner/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          qr_value: qrValue,
-          operator_id: currentUser?.id || null,
-        }),
-      });
+      // Fetch card WITH template cashback info
+      const { data: cardData, error: cardError } = await supabase
+        .from('issued_cards')
+        .select('uuid, guest_name, balance, email, phone, card_template_id, card_templates(cashback_percent)')
+        .eq('uuid', qrValue)
+        .single();
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Карта не найдена");
+      if (cardError || !cardData) throw new Error("Карта не найдена");
+
+      // Fetch global settings as fallback
+      const { data: settings } = await supabase
+        .from('app_settings')
+        .select('cashback_percent')
+        .limit(1)
+        .single();
+
+      // Use card-specific cashback if exists, else global
+      const percent = cardData.card_templates?.cashback_percent ?? settings?.cashback_percent ?? 5;
+      setCashbackPercent(percent);
 
       // Pause scanner and open Terminal modal
       if (scannerRef.current) {
         scannerRef.current.pause();
       }
 
-      setScannedCard(data.card);
+      setScannedCard(cardData);
       setShowTerminal(true);
       setBillAmount("");
       setUsePoints(false);
@@ -97,26 +104,27 @@ const Scanner = () => {
     const isPhone = /^\d+$/.test(strippedInput);
 
     try {
-      const body = {
-        operator_id: currentUser?.id || null,
-      };
+      // Fetch card WITH template cashback info
+      const { data: cardData, error: cardError } = await supabase
+        .from('issued_cards')
+        .select('uuid, guest_name, balance, email, phone, card_template_id, card_templates(cashback_percent)')
+        .or(isPhone ? `phone.eq.${strippedInput}` : `uuid.eq.${strippedInput}`)
+        .single();
 
-      if (isPhone) {
-        body.phone = strippedInput;
-      } else {
-        body.qr_value = strippedInput;
-      }
+      if (cardError || !cardData) throw new Error("Карта не найдена");
 
-      const res = await fetch("/api/scanner/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      // Fetch global settings as fallback
+      const { data: settings } = await supabase
+        .from('app_settings')
+        .select('cashback_percent')
+        .limit(1)
+        .single();
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Карта не найдена");
+      // Use card-specific cashback if exists, else global
+      const percent = cardData.card_templates?.cashback_percent ?? settings?.cashback_percent ?? 5;
+      setCashbackPercent(percent);
 
-      setScannedCard(data.card);
+      setScannedCard(cardData);
       setShowTerminal(true);
       setBillAmount("");
       setUsePoints(false);
@@ -205,10 +213,20 @@ const Scanner = () => {
     if (amount <= 0) return null;
 
     if (usePoints) {
-      // Redeem mode: amount - points (1 point = 1 currency)
+      // Redeem mode: use points and earn cashback on cash remainder
       const balance = scannedCard?.balance || 0;
-      const toPay = Math.max(0, amount - balance);
-      return { type: "redeem", value: toPay, label: "К оплате" };
+      const points_to_redeem = Math.min(balance, amount);
+      const cash_remainder = amount - points_to_redeem;
+      const earned_points = Math.floor(cash_remainder * cashbackPercent / 100);
+      const net_change = earned_points - points_to_redeem;
+
+      return {
+        type: "redeem",
+        toPay: cash_remainder,
+        pointsUsed: points_to_redeem,
+        pointsEarned: earned_points,
+        netChange: net_change
+      };
     } else {
       // Accrue mode: calculate points from amount
       const points = Math.floor(amount * cashbackPercent / 100);
@@ -301,13 +319,40 @@ const Scanner = () => {
 
             {/* Real-time Calculation */}
             {calculation && (
-              <div className={`mb-4 p-4 rounded-lg text-center ${calculation.type === 'accrue' ? 'bg-green-50 border-2 border-green-300' : 'bg-orange-50 border-2 border-orange-300'
+              <div className={`mb-4 p-4 rounded-lg ${calculation.type === 'accrue' ? 'bg-green-50 border-2 border-green-300' : 'bg-orange-50 border-2 border-orange-300'
                 }`}>
-                <div className="text-sm text-gray-600">{calculation.label}:</div>
-                <div className={`text-3xl font-bold ${calculation.type === 'accrue' ? 'text-green-600' : 'text-orange-600'
-                  }`}>
-                  {calculation.type === 'accrue' ? '+' : ''}{calculation.value} {calculation.type === 'accrue' ? 'B' : '₸'}
-                </div>
+                {calculation.type === 'accrue' ? (
+                  // Simple accrue display
+                  <div className="text-center">
+                    <div className="text-sm text-gray-600">{calculation.label}:</div>
+                    <div className="text-3xl font-bold text-green-600">
+                      +{calculation.value} B
+                    </div>
+                  </div>
+                ) : (
+                  // Detailed redeem breakdown
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Списано бонусов:</span>
+                      <span className="font-semibold text-red-600">-{calculation.pointsUsed} B</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">К оплате наличными:</span>
+                      <span className="font-semibold text-orange-600">{calculation.toPay} ₸</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Начислено за оплату:</span>
+                      <span className="font-semibold text-green-600">+{calculation.pointsEarned} B</span>
+                    </div>
+                    <div className="border-t pt-2 mt-2 flex justify-between">
+                      <span className="font-bold">Итого изменение:</span>
+                      <span className={`font-bold text-lg ${calculation.netChange >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                        {calculation.netChange >= 0 ? '+' : ''}{calculation.netChange} B
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
