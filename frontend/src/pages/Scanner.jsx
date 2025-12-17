@@ -288,10 +288,10 @@ const Scanner = () => {
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
             {/* Header with Guest Name */}
             <div className="bg-gradient-to-br from-blue-600 to-blue-700 px-6 py-6">
-              <h2 className="text-2xl font-bold text-white mb-1">{scannedCard.guest_name}</h2>
+              <h2 className="text-2xl font-light text-white mb-1">{scannedCard.guest_name}</h2>
               <div className="flex items-center gap-2">
-                <span className="text-blue-100 text-sm">Баланс:</span>
-                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold text-sm">
+                <span className="text-blue-100 text-sm font-light">Баланс:</span>
+                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold text-sm">
                   {scannedCard.balance} B
                 </span>
               </div>
@@ -301,14 +301,14 @@ const Scanner = () => {
             <div className="px-6 py-6">
               {/* Bill Amount - HUGE and Centered */}
               <div className="mb-6">
-                <label className="block text-gray-500 text-sm font-medium mb-3 text-center">
+                <label className="block text-gray-700 text-sm font-normal mb-3 text-center">
                   Сумма покупки
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   placeholder="1000"
-                  className="w-full text-5xl font-bold text-center text-gray-900 tracking-tight border-0 border-b-2 border-gray-200 focus:border-blue-600 focus:outline-none py-2 placeholder-gray-300"
+                  className="w-full text-5xl font-light text-center text-gray-900 tracking-tight border-0 border-b border-gray-200 focus:border-blue-600 focus:outline-none py-2 placeholder-gray-300"
                   value={billAmount}
                   onChange={(e) => setBillAmount(e.target.value)}
                   autoFocus
@@ -321,9 +321,9 @@ const Scanner = () => {
                 onClick={() => setUsePoints(!usePoints)}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-gray-900 font-semibold">Списать бонусы</span>
+                  <span className="text-gray-900 font-normal">Списать бонусы</span>
                   {usePoints && (
-                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-xs font-bold">
+                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-xs font-semibold">
                       АКТИВНО
                     </span>
                   )}
@@ -346,8 +346,8 @@ const Scanner = () => {
                   {calculation.type === 'accrue' ? (
                     // Simple accrue display
                     <div className="text-center py-2">
-                      <div className="text-sm text-gray-500 mb-2">{calculation.label}:</div>
-                      <div className="text-4xl font-bold text-green-600">
+                      <div className="text-sm text-gray-700 mb-2 font-normal">{calculation.label}:</div>
+                      <div className="text-4xl font-light text-green-600">
                         +{calculation.value} B
                       </div>
                     </div>
@@ -355,20 +355,20 @@ const Scanner = () => {
                     // Detailed redeem breakdown
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-500 text-sm">Списано бонусов:</span>
-                        <span className="font-bold text-gray-900">-{calculation.pointsUsed} B</span>
+                        <span className="text-gray-700 text-sm font-normal">Списано бонусов:</span>
+                        <span className="font-semibold text-gray-900">-{calculation.pointsUsed} B</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-500 text-sm">К оплате наличными:</span>
-                        <span className="font-bold text-gray-900">{calculation.toPay} ₸</span>
+                        <span className="text-gray-700 text-sm font-normal">К оплате наличными:</span>
+                        <span className="font-semibold text-gray-900">{calculation.toPay} ₸</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-500 text-sm">Начислено за оплату:</span>
-                        <span className="font-bold text-gray-900">+{calculation.pointsEarned} B</span>
+                        <span className="text-gray-700 text-sm font-normal">Начислено за оплату:</span>
+                        <span className="font-semibold text-gray-900">+{calculation.pointsEarned} B</span>
                       </div>
                       <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between items-center">
-                        <span className="text-gray-900 font-bold">Итого изменение:</span>
-                        <span className={`font-bold text-lg ${calculation.netChange >= 0 ? 'text-green-600' : 'text-red-600'
+                        <span className="text-gray-900 font-semibold">Итого изменение:</span>
+                        <span className={`font-semibold text-lg ${calculation.netChange >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
                           {calculation.netChange >= 0 ? '+' : ''}{calculation.netChange} B
                         </span>
@@ -380,7 +380,7 @@ const Scanner = () => {
 
               {/* Notification */}
               {notification && (
-                <div className={`mb-6 p-4 rounded-xl text-center font-bold ${notification.type === 'success'
+                <div className={`mb-6 p-4 rounded-xl text-center font-semibold ${notification.type === 'success'
                     ? 'bg-green-50 text-green-700 border border-green-200'
                     : 'bg-red-50 text-red-700 border border-red-200'
                   }`}>
@@ -391,7 +391,7 @@ const Scanner = () => {
               {/* Action Buttons - Large and Tappable */}
               <div className="flex gap-3">
                 <button
-                  className="flex-1 h-14 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors disabled:opacity-50"
+                  className="flex-1 h-14 bg-gray-100 hover:bg-gray-200 text-gray-700 font-normal rounded-xl transition-colors disabled:opacity-50"
                   onClick={handleCloseTerminal}
                   disabled={processing}
                 >
