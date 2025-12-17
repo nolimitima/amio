@@ -282,113 +282,129 @@ const Scanner = () => {
 
       {error && <div className="text-red-600 text-sm mb-3">❌ {error}</div>}
 
-      {/* Terminal Modal */}
+      {/* Terminal Modal - Modern Fintech Design */}
       {showTerminal && scannedCard && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold mb-4 text-center">💳 POS Терминал</h2>
-
-            {/* Client Info */}
-            <div className="bg-blue-50 p-4 rounded-lg mb-4">
-              <div className="text-lg font-semibold">{scannedCard.guest_name}</div>
-              <div className="text-sm text-gray-600">
-                Баланс: <span className="font-bold text-blue-600">{scannedCard.balance} B</span>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Header with Guest Name */}
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 px-6 py-6">
+              <h2 className="text-2xl font-bold text-white mb-1">{scannedCard.guest_name}</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-blue-100 text-sm">Баланс:</span>
+                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold text-sm">
+                  {scannedCard.balance} B
+                </span>
               </div>
             </div>
 
-            {/* Amount Input */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Сумма покупки</label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="0"
-                className="w-full text-3xl border-2 border-gray-300 rounded-lg px-4 py-3 text-center font-bold focus:border-blue-500 focus:outline-none"
-                value={billAmount}
-                onChange={(e) => setBillAmount(e.target.value)}
-                autoFocus
-              />
-            </div>
+            {/* Main Content */}
+            <div className="px-6 py-6">
+              {/* Bill Amount - HUGE and Centered */}
+              <div className="mb-6">
+                <label className="block text-gray-500 text-sm font-medium mb-3 text-center">
+                  Сумма покупки
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="1000"
+                  className="w-full text-5xl font-bold text-center text-gray-900 tracking-tight border-0 border-b-2 border-gray-200 focus:border-blue-600 focus:outline-none py-2 placeholder-gray-300"
+                  value={billAmount}
+                  onChange={(e) => setBillAmount(e.target.value)}
+                  autoFocus
+                />
+              </div>
 
-            {/* Redeem Toggle */}
-            <div className="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-              <span className="font-medium">Списать бонусы</span>
-              <button
-                type="button"
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${usePoints ? "bg-blue-600" : "bg-gray-300"
-                  }`}
+              {/* Use Points Toggle - Large Clickable Row */}
+              <div
+                className="mb-6 flex items-center justify-between bg-gray-50 hover:bg-gray-100 p-4 rounded-xl cursor-pointer transition-colors"
                 onClick={() => setUsePoints(!usePoints)}
               >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${usePoints ? "translate-x-6" : "translate-x-1"
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-900 font-semibold">Списать бонусы</span>
+                  {usePoints && (
+                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-xs font-bold">
+                      АКТИВНО
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${usePoints ? "bg-blue-600" : "bg-gray-300"
                     }`}
-                />
-              </button>
-            </div>
-
-            {/* Real-time Calculation */}
-            {calculation && (
-              <div className={`mb-4 p-4 rounded-lg ${calculation.type === 'accrue' ? 'bg-green-50 border-2 border-green-300' : 'bg-orange-50 border-2 border-orange-300'
-                }`}>
-                {calculation.type === 'accrue' ? (
-                  // Simple accrue display
-                  <div className="text-center">
-                    <div className="text-sm text-gray-600">{calculation.label}:</div>
-                    <div className="text-3xl font-bold text-green-600">
-                      +{calculation.value} B
-                    </div>
-                  </div>
-                ) : (
-                  // Detailed redeem breakdown
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Списано бонусов:</span>
-                      <span className="font-semibold text-red-600">-{calculation.pointsUsed} B</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">К оплате наличными:</span>
-                      <span className="font-semibold text-orange-600">{calculation.toPay} ₸</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Начислено за оплату:</span>
-                      <span className="font-semibold text-green-600">+{calculation.pointsEarned} B</span>
-                    </div>
-                    <div className="border-t pt-2 mt-2 flex justify-between">
-                      <span className="font-bold">Итого изменение:</span>
-                      <span className={`font-bold text-lg ${calculation.netChange >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                        {calculation.netChange >= 0 ? '+' : ''}{calculation.netChange} B
-                      </span>
-                    </div>
-                  </div>
-                )}
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform ${usePoints ? "translate-x-7" : "translate-x-1"
+                      }`}
+                  />
+                </button>
               </div>
-            )}
 
-            {/* Notification */}
-            {notification && (
-              <div className={`mb-4 p-3 rounded-lg text-center font-medium ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                ✓ {notification.message}
+              {/* Calculation Summary Box - The Receipt */}
+              {calculation && (
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6">
+                  {calculation.type === 'accrue' ? (
+                    // Simple accrue display
+                    <div className="text-center py-2">
+                      <div className="text-sm text-gray-500 mb-2">{calculation.label}:</div>
+                      <div className="text-4xl font-bold text-green-600">
+                        +{calculation.value} B
+                      </div>
+                    </div>
+                  ) : (
+                    // Detailed redeem breakdown
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500 text-sm">Списано бонусов:</span>
+                        <span className="font-bold text-gray-900">-{calculation.pointsUsed} B</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500 text-sm">К оплате наличными:</span>
+                        <span className="font-bold text-gray-900">{calculation.toPay} ₸</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500 text-sm">Начислено за оплату:</span>
+                        <span className="font-bold text-gray-900">+{calculation.pointsEarned} B</span>
+                      </div>
+                      <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between items-center">
+                        <span className="text-gray-900 font-bold">Итого изменение:</span>
+                        <span className={`font-bold text-lg ${calculation.netChange >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                          {calculation.netChange >= 0 ? '+' : ''}{calculation.netChange} B
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Notification */}
+              {notification && (
+                <div className={`mb-6 p-4 rounded-xl text-center font-bold ${notification.type === 'success'
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}>
+                  ✓ {notification.message}
+                </div>
+              )}
+
+              {/* Action Buttons - Large and Tappable */}
+              <div className="flex gap-3">
+                <button
+                  className="flex-1 h-14 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors disabled:opacity-50"
+                  onClick={handleCloseTerminal}
+                  disabled={processing}
+                >
+                  Отмена
+                </button>
+                <button
+                  className="flex-1 h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:shadow-none"
+                  onClick={handleProcessPayment}
+                  disabled={processing || !billAmount}
+                >
+                  {processing ? "Обработка..." : "Провести оплату"}
+                </button>
               </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50"
-                onClick={handleCloseTerminal}
-                disabled={processing}
-              >
-                Отмена
-              </button>
-              <button
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
-                onClick={handleProcessPayment}
-                disabled={processing || !billAmount}
-              >
-                {processing ? "Обработка..." : "Провести оплату"}
-              </button>
             </div>
           </div>
         </div>
