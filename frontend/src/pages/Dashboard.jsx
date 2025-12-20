@@ -409,9 +409,9 @@ const Dashboard = () => {
       </header>
 
       {/* MAIN LAYOUT */}
-      <div className="max-w-7xl mx-auto px-4 flex gap-8 pb-20 md:pb-0">
-        {/* SIDEBAR - Desktop Only */}
-        <div className="w-64 flex-shrink-0 hidden md:flex">
+      <div className="max-w-7xl mx-auto px-4 flex gap-8">
+        {/* SIDEBAR */}
+        <div className="w-64 flex-shrink-0">
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
             <nav className="space-y-2">
               <button
@@ -724,53 +724,6 @@ const Dashboard = () => {
           )}
         </div>
       </div>
-
-      {/* BOTTOM NAVIGATION - Mobile Only */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50">
-        <div className="flex justify-around items-center py-3">
-          <button
-            onClick={() => navigate('/scanner')}
-            className="flex flex-col items-center gap-1 px-4 py-2 text-gray-600 hover:text-[#121E1D] transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-            </svg>
-            <span className="text-xs">Scanner</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('cards')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${activeTab === 'cards' ? 'text-[#121E1D]' : 'text-gray-600 hover:text-[#121E1D]'
-              }`}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-            </svg>
-            <span className="text-xs">Cards</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('scans')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${activeTab === 'scans' ? 'text-[#121E1D]' : 'text-gray-600 hover:text-[#121E1D]'
-              }`}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-            <span className="text-xs">Dashboard</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${activeTab === 'settings' ? 'text-[#121E1D]' : 'text-gray-600 hover:text-[#121E1D]'
-              }`}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span className="text-xs">Settings</span>
-          </button>
-        </div>
-      </nav>
-
       {/* Модальное окно для выдачи карты */}
       {issueModal.open && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
