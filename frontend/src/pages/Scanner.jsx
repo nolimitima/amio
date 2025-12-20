@@ -245,42 +245,43 @@ const Scanner = () => {
   const calculation = calculateResult();
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow rounded-xl">
-      <h1 className="text-xl font-semibold mb-4">Сканирование карты</h1>
+    <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-xl">
+      <h1 className="text-2xl font-light text-gray-900 mb-6">Сканирование карты</h1>
 
       {!scanning ? (
         <button
-          className="w-full bg-green-600 text-white py-2 rounded mb-4"
+          className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl text-lg font-semibold transition-colors shadow-md mb-4"
           onClick={() => setScanning(true)}
         >
           📷 Запустить сканер
         </button>
       ) : (
         <button
-          className="w-full bg-gray-600 text-white py-2 rounded mb-4"
+          className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-xl text-lg font-semibold transition-colors shadow-md mb-4"
           onClick={stopScanner}
         >
           ⏹ Остановить сканер
         </button>
       )}
 
-      <div id={readerId} className="w-full h-64 mb-1 bg-gray-100"></div>
-      <div className="text-xs text-gray-500 mb-3">Наведите камеру на QR-код карты</div>
+      <div id={readerId} className="w-full h-64 mb-3 bg-gray-100 rounded-lg"></div>
+      <div className="text-sm text-gray-700 mb-4 text-center font-normal">Наведите камеру на QR-код карты</div>
 
       <form onSubmit={handleManualSubmit} className="flex gap-2 mb-4">
         <input
           type="tel"
           placeholder="Введите номер телефона (7...)"
-          className="flex-1 border border-gray-300 rounded px-2 py-1 text-gray-900 bg-white placeholder-gray-400"
+          className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-base"
           value={manual}
           onChange={(e) => setManual(e.target.value)}
         />
-        <button type="submit" className="bg-blue-600 text-white px-4 rounded">
+        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-semibold transition-colors">
           OK
         </button>
       </form>
 
-      {error && <div className="text-red-600 text-sm mb-3">❌ {error}</div>}
+      {error && <div className="text-red-600 text-sm mb-3 font-medium">❌ {error}</div>}
+
 
       {/* Terminal Modal - Modern Fintech Design */}
       {showTerminal && scannedCard && (
@@ -381,8 +382,8 @@ const Scanner = () => {
               {/* Notification */}
               {notification && (
                 <div className={`mb-6 p-4 rounded-xl text-center font-semibold ${notification.type === 'success'
-                    ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-red-50 text-red-700 border border-red-200'
+                  ? 'bg-green-50 text-green-700 border border-green-200'
+                  : 'bg-red-50 text-red-700 border border-red-200'
                   }`}>
                   ✓ {notification.message}
                 </div>
