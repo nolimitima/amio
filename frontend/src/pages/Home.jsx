@@ -66,21 +66,21 @@ const Home = () => {
   return (
     <>
       {/* HEADER */}
-      <header className="w-full bg-white/80 sticky top-0 z-30 rounded-xl max-w-screen-xl mx-auto px-4 py-3 flex justify-between items-center mt-6 mb-8 shadow-sm">
+      <header className="w-full bg-white/80 sticky top-0 z-30 rounded-xl max-w-screen-xl mx-auto px-3 md:px-4 py-3 flex justify-between items-center mt-4 md:mt-6 mb-6 md:mb-8 shadow-sm">
         {/* Left: Logo and name */}
-        <div className="flex items-center gap-3 select-none cursor-pointer" onClick={() => navigate('/')}> 
-          <img src={headerLogo} alt="Amian logo" className="h-12 w-12 object-contain" />
-          <span className="text-[#121E1D] text-xl font-light font-[Inter]">Amian</span>
+        <div className="flex items-center gap-2 md:gap-3 select-none cursor-pointer" onClick={() => navigate('/')}>
+          <img src={headerLogo} alt="Amian logo" className="h-10 md:h-12 w-10 md:w-12 object-contain" />
+          <span className="text-[#121E1D] text-lg md:text-xl font-light font-[Inter]">Amian</span>
         </div>
-        {/* Center: Navigation */}
-        <nav className="flex gap-8 text-base font-light">
+        {/* Center: Navigation - hidden on mobile, visible on md+ */}
+        <nav className="hidden md:flex gap-6 lg:gap-8 text-sm lg:text-base font-light">
           <a href="#how" className="text-[#121E1D] transition-colors duration-200 hover:text-[#D1E889]">Как начать</a>
           <a href="#pricing" className="text-[#121E1D] transition-colors duration-200 hover:text-[#D1E889]">Стоимость</a>
           <a href="#faq" className="text-[#121E1D] transition-colors duration-200 hover:text-[#D1E889]">FAQ</a>
         </nav>
         {/* Right: Login button */}
         <button
-          className="px-6 py-2 rounded-lg font-light text-[#121E1D] bg-[#D1E889] hover:bg-[#e6f7a1] transition-all duration-200 border border-transparent shadow-sm"
+          className="px-4 md:px-6 py-2 rounded-lg font-light text-[#121E1D] bg-[#D1E889] hover:bg-[#e6f7a1] transition-all duration-200 border border-transparent shadow-sm text-sm md:text-base whitespace-nowrap"
           onClick={() => navigate('/login')}
         >
           Войти
@@ -89,25 +89,25 @@ const Home = () => {
       {/* MAIN CONTENT */}
       <div className="font-[Inter] bg-[#F1EFED] min-h-screen w-full relative overflow-x-hidden">
         {/* HERO */}
-        <section className="w-full flex flex-col items-center justify-center pt-24 pb-10 px-4 md:px-0 max-w-3xl mx-auto relative z-10">
-          <h1 className="text-[#232823] text-4xl md:text-5xl font-extralight leading-tight mb-4 text-center tracking-tight" style={{letterSpacing: '-0.01em'}}>
+        <section className="w-full flex flex-col items-center justify-center pt-12 md:pt-24 pb-10 px-4 max-w-3xl mx-auto relative z-10">
+          <h1 className="text-[#232823] text-3xl md:text-4xl lg:text-5xl font-extralight leading-tight mb-4 text-center tracking-tight" style={{ letterSpacing: '-0.01em' }}>
             <span>Цифровые карты лояльности для</span>
             <br />
-            <span style={{color: '#888', fontWeight: 300, fontFamily: 'inherit'}}>
+            <span style={{ color: '#888', fontWeight: 300, fontFamily: 'inherit' }}>
               {typed}
-              <span className="inline-block animate-pulse" style={{width: '1ch'}}>|</span>
+              <span className="inline-block animate-pulse" style={{ width: '1ch' }}>|</span>
             </span>
           </h1>
-          <p className="text-[#232823] text-base md:text-lg font-light mb-6 mt-4 text-center max-w-2xl mx-auto">
+          <p className="text-[#232823] text-sm md:text-base lg:text-lg font-light mb-6 mt-4 text-center max-w-2xl mx-auto px-2">
             Купоны, абонементы и накопительные баллы — без приложений и сложной интеграции.
           </p>
           <button
-            className="bg-[#D1E889] hover:bg-[#e6f7a1] text-[#121E1D] text-lg font-light rounded-full px-8 py-3 transition-all duration-200 mb-6 mt-0 mx-auto block shadow-md shadow-[#D1E889]/20"
+            className="bg-[#D1E889] hover:bg-[#e6f7a1] text-[#121E1D] text-base md:text-lg font-light rounded-full px-6 md:px-8 py-3 transition-all duration-200 mb-6 mt-0 mx-auto block shadow-md shadow-[#D1E889]/20"
             onClick={() => navigate('/signup')}
           >
             Создать свою карту
           </button>
-          <img src="/phone-mock.png" alt="Превью карты Amian" className="w-[330px] md:w-[410px] mx-auto z-10" style={{marginBottom: '-60px', position: 'relative'}} />
+          <img src="/phone-mock.png" alt="Превью карты Amian" className="w-[280px] sm:w-[330px] md:w-[410px] mx-auto z-10" style={{ marginBottom: '-60px', position: 'relative' }} />
         </section>
 
         {/* WHY AMIAN */}
@@ -167,8 +167,8 @@ const Home = () => {
               Как Amian помогает бизнесу и клиентам: история Алии <span className="text-2xl">☕️</span>
             </h3>
             <div className="border border-[#121E1D] rounded-xl p-5 bg-white text-[#232823] font-extralight text-base leading-relaxed">
-              Алия — владелица уютной кофейни в центре города. Она всегда хотела дать своим постоянным клиентам удобные бонусные карты, но пластиковые терялись, а приложения устанавливать никто не хотел.<br/>
-              С Amian всё изменилось: Алия всего за пару минут заполнила простую форму и получила цифровую карту лояльности, которую клиенты добавляют прямо в Apple Wallet и Google Pay — без скачивания и лишних действий.<br/>
+              Алия — владелица уютной кофейни в центре города. Она всегда хотела дать своим постоянным клиентам удобные бонусные карты, но пластиковые терялись, а приложения устанавливать никто не хотел.<br />
+              С Amian всё изменилось: Алия всего за пару минут заполнила простую форму и получила цифровую карту лояльности, которую клиенты добавляют прямо в Apple Wallet и Google Pay — без скачивания и лишних действий.<br />
               Теперь Алия видит, как клиенты чаще возвращаются и с радостью копят бонусы. А ей не нужно тратить время на сложные интеграции и поддержание приложений.
             </div>
           </div>
@@ -189,7 +189,7 @@ const Home = () => {
                 </button>
                 <div
                   className={`transition-all duration-300 overflow-hidden ${open === idx ? 'max-h-40 py-2' : 'max-h-0 py-0'}`}
-                  style={{color: '#232823', fontWeight: 200}}
+                  style={{ color: '#232823', fontWeight: 200 }}
                 >
                   {open === idx && <div className="text-base px-1">{item.a}</div>}
                 </div>
@@ -199,11 +199,11 @@ const Home = () => {
         </section>
 
         {/* FOOTER */}
-        <div className="w-full bg-[#F1EFED]" style={{paddingTop: '79px', marginTop: '79px'}}>
-          <footer className="max-w-[calc(100%-8px)] mx-auto bg-[#121E1D] text-[#F1EFED] rounded-t-3xl relative overflow-hidden border-t border-[#232823]/30 flex flex-col items-center" style={{paddingTop: '47px', paddingBottom: '23px'}}>
+        <div className="w-full bg-[#F1EFED]" style={{ paddingTop: '79px', marginTop: '79px' }}>
+          <footer className="max-w-[calc(100%-8px)] mx-auto bg-[#121E1D] text-[#F1EFED] rounded-t-3xl relative overflow-hidden border-t border-[#232823]/30 flex flex-col items-center" style={{ paddingTop: '47px', paddingBottom: '23px' }}>
             {/* Верхняя часть футера */}
             <div className="flex flex-col items-center gap-6 w-full">
-              <img src="/src/assets/logo.png" alt="Amian logo" style={{height: '49px', width: '49px'}} className="object-contain mb-2" />
+              <img src="/src/assets/logo.png" alt="Amian logo" style={{ height: '49px', width: '49px' }} className="object-contain mb-2" />
               <h2 className="text-3xl md:text-4xl font-light text-center">Создайте свою карту</h2>
               <div className="text-[#F1EFED]/80 text-base md:text-lg font-light text-center max-w-xl">Купоны, абонементы и накопительные баллы — без приложений и сложной интеграции. Повышайте продажи и укрепляйте доверие клиентов за счёт быстрых цифровых карт.</div>
               <button
@@ -214,7 +214,7 @@ const Home = () => {
               </button>
             </div>
             {/* Разделитель */}
-            <div className="w-full h-px bg-[#F1EFED]/10" style={{margin: '31px 0'}} />
+            <div className="w-full h-px bg-[#F1EFED]/10" style={{ margin: '31px 0' }} />
             {/* Нижняя часть футера */}
             <div className="w-full px-4 md:px-12 lg:px-20 flex flex-col md:flex-row justify-between items-center gap-8 md:gap-0 max-w-7xl mx-auto">
               <div className="flex flex-col items-center md:items-start gap-2 max-w-md">
@@ -227,22 +227,22 @@ const Home = () => {
                 <div className="flex gap-4 mt-0 md:mt-4">
                   {/* Instagram */}
                   <a href="#" className="hover:text-[#F1EFED]" aria-label="Instagram">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5"/><circle cx="12" cy="12" r="4" strokeWidth="1.5"/><circle cx="17" cy="7" r="1.2" fill="currentColor"/></svg>
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5" /><circle cx="12" cy="12" r="4" strokeWidth="1.5" /><circle cx="17" cy="7" r="1.2" fill="currentColor" /></svg>
                   </a>
                   {/* LinkedIn */}
                   <a href="#" className="hover:text-[#F1EFED]" aria-label="LinkedIn">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6"><rect width="18" height="18" x="3" y="3" rx="4" strokeWidth="1.5"/><path strokeWidth="1.5" d="M8.5 10.5v5M12 13v2.5m0-2.5V13a2 2 0 1 1 4 0v2.5"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/></svg>
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6"><rect width="18" height="18" x="3" y="3" rx="4" strokeWidth="1.5" /><path strokeWidth="1.5" d="M8.5 10.5v5M12 13v2.5m0-2.5V13a2 2 0 1 1 4 0v2.5" /><circle cx="8.5" cy="8.5" r="1" fill="currentColor" /></svg>
                   </a>
                   {/* Telegram */}
                   <a href="https://t.me/amianapp" target="_blank" rel="noopener noreferrer" className="hover:text-[#F1EFED]" aria-label="Telegram">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6"><path strokeWidth="1.5" d="M21 4L10 13.5"/><path strokeWidth="1.5" d="M21 4l-4.5 17a1 1 0 0 1-1.6.6l-4.2-3.2-2.1-1.5a1 1 0 0 1 .2-1.7l1.7-.7 8.7-7.2a.5.5 0 0 0-.6-.8l-13 5.2a1 1 0 0 0 .1 1.9l3.2.7"/></svg>
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6"><path strokeWidth="1.5" d="M21 4L10 13.5" /><path strokeWidth="1.5" d="M21 4l-4.5 17a1 1 0 0 1-1.6.6l-4.2-3.2-2.1-1.5a1 1 0 0 1 .2-1.7l1.7-.7 8.7-7.2a.5.5 0 0 0-.6-.8l-13 5.2a1 1 0 0 0 .1 1.9l3.2.7" /></svg>
                   </a>
                 </div>
               </div>
             </div>
             {/* Копирайт */}
-            <div className="w-full text-center text-xs text-[#F1EFED]/60 font-extralight flex justify-center items-center" style={{marginTop: '23px'}}>
-              <span style={{transform: 'translateY(-1px)'}}>
+            <div className="w-full text-center text-xs text-[#F1EFED]/60 font-extralight flex justify-center items-center" style={{ marginTop: '23px' }}>
+              <span style={{ transform: 'translateY(-1px)' }}>
                 © {new Date().getFullYear()} Amian. Все права защищены.
               </span>
             </div>

@@ -276,7 +276,7 @@ const Dashboard = () => {
 
   // И ЗАМЕНИТЕ ЕГО НА ЭТОТ
   const cardPreview = (
-    <div className="w-[340px] h-[480px] rounded-2xl shadow-lg flex flex-col overflow-hidden relative" style={{ background: bgColor }}>
+    <div className="w-full max-w-[340px] h-[480px] rounded-2xl shadow-lg flex flex-col overflow-hidden relative mx-auto" style={{ background: bgColor }}>
       {/* Верхняя панель: логотип слева, баланс справа */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <div className="flex items-center gap-3">
@@ -377,20 +377,20 @@ const Dashboard = () => {
   return (
     <div className="font-[Inter] bg-[#F1EFED] min-h-screen w-full">
       {/* HEADER */}
-      <header className="w-full bg-white/80 sticky top-0 z-30 rounded-xl max-w-screen-xl mx-auto px-4 py-3 flex justify-between items-center mt-6 mb-8 shadow-sm">
+      <header className="w-full bg-white/80 sticky top-0 z-30 rounded-xl max-w-screen-xl mx-auto px-3 sm:px-4 py-3 flex justify-between items-center mt-4 md:mt-6 mb-6 md:mb-8 shadow-sm">
         {/* Left: Logo and name */}
-        <div className="flex items-center gap-3 select-none cursor-pointer" onClick={handleGoHome}>
-          <img src={headerLogo} alt="Amian logo" className="h-12 w-12 object-contain" />
-          <span className="text-[#121E1D] text-xl font-light font-[Inter]">Amian</span>
+        <div className="flex items-center gap-2 md:gap-3 select-none cursor-pointer" onClick={handleGoHome}>
+          <img src={headerLogo} alt="Amian logo" className="h-10 md:h-12 w-10 md:w-12 object-contain" />
+          <span className="text-[#121E1D] text-lg md:text-xl font-light font-[Inter]">Amian</span>
         </div>
 
         {/* Center: Empty */}
         <div></div>
 
         {/* Right: User name and logout */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <span
-            className="text-[#121E1D] font-light cursor-pointer hover:underline hover:text-[#D1E889] transition"
+            className="text-[#121E1D] font-light cursor-pointer hover:underline hover:text-[#D1E889] transition text-sm md:text-base truncate max-w-[120px] sm:max-w-[200px] md:max-w-none"
             title="Настройки аккаунта"
             onClick={() => setActiveTab('settings')}
           >
@@ -398,7 +398,7 @@ const Dashboard = () => {
           </span>
           <button
             onClick={handleLogout}
-            className="p-2 rounded-lg hover:bg-[#D1E889]/20 transition-all duration-200"
+            className="p-2 rounded-lg hover:bg-[#D1E889]/20 transition-all duration-200 flex-shrink-0"
             title="Выйти"
           >
             <svg className="w-5 h-5 text-[#121E1D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -409,14 +409,14 @@ const Dashboard = () => {
       </header>
 
       {/* MAIN LAYOUT */}
-      <div className="max-w-7xl mx-auto px-4 flex gap-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 flex flex-col lg:flex-row gap-4 lg:gap-8">
         {/* SIDEBAR */}
-        <div className="w-64 flex-shrink-0">
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
-            <nav className="space-y-2">
+        <div className="w-full lg:w-64 lg:flex-shrink-0">
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-white/50">
+            <nav className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible">
               <button
                 onClick={() => setActiveTab('cards')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'cards'
+                className={`whitespace-nowrap lg:w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'cards'
                   ? 'bg-[#D1E889] text-[#121E1D]'
                   : 'text-[#121E1D] hover:bg-[#D1E889]/20'
                   }`}
@@ -425,7 +425,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('create')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'create'
+                className={`whitespace-nowrap lg:w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'create'
                   ? 'bg-[#D1E889] text-[#121E1D]'
                   : 'text-[#121E1D] hover:bg-[#D1E889]/20'
                   }`}
@@ -434,7 +434,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('scans')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'scans'
+                className={`whitespace-nowrap lg:w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'scans'
                   ? 'bg-[#D1E889] text-[#121E1D]'
                   : 'text-[#121E1D] hover:bg-[#D1E889]/20'
                   }`}
@@ -443,7 +443,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'settings'
+                className={`whitespace-nowrap lg:w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'settings'
                   ? 'bg-[#D1E889] text-[#121E1D]'
                   : 'text-[#121E1D] hover:bg-[#D1E889]/20'
                   }`}
@@ -452,7 +452,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('registration')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'registration'
+                className={`whitespace-nowrap lg:w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'registration'
                   ? 'bg-[#D1E889] text-[#121E1D]'
                   : 'text-[#121E1D] hover:bg-[#D1E889]/20'
                   }`}
@@ -468,11 +468,11 @@ const Dashboard = () => {
           {activeTab === 'cards' && (
             <>
               {/* Welcome Section */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-lg border border-white/50 mb-8">
-                <h1 className="text-3xl md:text-4xl font-extralight text-[#121E1D] mb-4">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-white/50 mb-6 md:mb-8">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-extralight text-[#121E1D] mb-4">
                   Привет, {currentUser?.user_metadata?.company_name || currentUser?.email || 'Пользователь'}!
                 </h1>
-                <p className="text-[#232823] text-lg font-light">
+                <p className="text-[#232823] text-base md:text-lg font-light">
                   Здесь будет список ваших цифровых карт лояльности.
                 </p>
 
@@ -494,7 +494,7 @@ const Dashboard = () => {
               </div>
 
               {/* Cards Section */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-lg border border-white/50">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-white/50">
                 <h2 className="text-2xl font-extralight text-[#121E1D] mb-6">
                   Ваши карты
                 </h2>
@@ -518,19 +518,19 @@ const Dashboard = () => {
                 ) : (
                   <div className="grid gap-4">
                     {cards.map((card, index) => (
-                      <div key={card.id || index} className="bg-white/50 rounded-xl p-6 border border-[#121E1D]/10">
+                      <div key={card.id || index} className="bg-white/50 rounded-xl p-4 sm:p-6 border border-[#121E1D]/10">
                         <div className="flex items-center gap-4 mb-2">
-                          {card.logo_url && <img src={card.logo_url} alt="logo" className="w-12 h-12 rounded bg-white/80 object-contain" />}
-                          <div>
-                            <h3 className="text-lg font-light text-[#121E1D] mb-1">{card.user_facing_name || card.internal_name}</h3>
-                            <div className="text-xs text-gray-500">ID: {card.id}</div>
+                          {card.logo_url && <img src={card.logo_url} alt="logo" className="w-12 h-12 rounded bg-white/80 object-contain flex-shrink-0" />}
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-lg font-light text-[#121E1D] mb-1 break-words">{card.user_facing_name || card.internal_name}</h3>
+                            <div className="text-xs text-gray-500 break-all">ID: {card.id}</div>
                           </div>
                         </div>
-                        <div className="text-[#232823] font-extralight mb-2">{card.description}</div>
-                        <div className="flex gap-4 text-xs text-gray-600 mb-2">
-                          {card.contact_email && <div>Email: {card.contact_email}</div>}
-                          {card.contact_phone && <div>Телефон: {card.contact_phone}</div>}
-                          {card.website_url && <div>Сайт: <a href={card.website_url} className="underline" target="_blank" rel="noopener noreferrer">{card.website_url}</a></div>}
+                        <div className="text-[#232823] font-extralight mb-2 break-words">{card.description}</div>
+                        <div className="flex flex-col sm:flex-row sm:gap-4 gap-1 text-xs text-gray-600 mb-2">
+                          {card.contact_email && <div className="break-all">Email: {card.contact_email}</div>}
+                          {card.contact_phone && <div className="break-all">Телефон: {card.contact_phone}</div>}
+                          {card.website_url && <div className="break-all">Сайт: <a href={card.website_url} className="underline" target="_blank" rel="noopener noreferrer">{card.website_url}</a></div>}
                         </div>
                         <button className="mt-2 bg-[#D1E889] hover:bg-[#e6f7a1] text-[#121E1D] font-light rounded-full px-6 py-2 transition-all duration-200 shadow-md shadow-[#D1E889]/20" onClick={() => handleIssueCard(card)}>
                           Выдать карту
@@ -543,18 +543,18 @@ const Dashboard = () => {
             </>
           )}
           {activeTab === 'scans' && (
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-lg border border-white/50">
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-white/50">
               <ScanLogsList />
             </div>
           )}
           {activeTab === 'registration' && (
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-lg border border-white/50">
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-white/50">
               <RegistrationLinks />
             </div>
           )}
           {activeTab === 'create' && (
-            <form className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-lg border border-white/50 flex gap-8" onSubmit={handleSubmit}>
-              <div className="flex-1 min-w-[320px]">
+            <form className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-white/50 flex flex-col xl:flex-row gap-6 overflow-hidden" onSubmit={handleSubmit}>
+              <div className="flex-1 min-w-0">
                 <div className="flex gap-2 mb-6">
                   <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab === 0 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e => { e.preventDefault(); setCreateTab(0) }}>Лицевая сторона</button>
                   <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab === 1 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e => { e.preventDefault(); setCreateTab(1) }}>Обратная сторона</button>
@@ -724,10 +724,9 @@ const Dashboard = () => {
           )}
         </div>
       </div>
-      {/* Модальное окно для выдачи карты */}
       {issueModal.open && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 shadow-xl min-w-[320px] max-w-[90vw] relative">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-4 sm:p-8 shadow-xl w-full max-w-md relative">
             <button className="absolute top-2 right-2 text-gray-400 hover:text-black text-2xl" onClick={() => setIssueModal({ open: false, card: null, data: null, loading: false, error: null })}>&times;</button>
             <h2 className="text-xl font-light mb-4">Выдача карты</h2>
             {!issueModal.data && !issueModal.loading && (

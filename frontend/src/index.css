@@ -11,12 +11,19 @@
   html {
     font-family: 'Inter', sans-serif;
     background: #F1EFED;
+    overflow-x: hidden;
   }
   
   body {
     font-weight: 300;
     background: #F1EFED;
     color: #F1EFED;
+    overflow-x: hidden;
+  }
+
+  /* Prevent flex/grid children from overflowing */
+  * {
+    min-width: 0;
   }
 }
 
