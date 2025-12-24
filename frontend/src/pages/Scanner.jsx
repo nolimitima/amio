@@ -26,25 +26,42 @@ const Scanner = () => {
   const scannerRef = useRef(null);
 
   useEffect(() => {
-    // Inject CSS fix for html5-qrcode internal elements to prevent distortion
+    // Inject CSS fix for html5-qrcode internal elements to force SQUARE viewfinder
     const style = document.createElement('style');
     style.id = 'qr-scanner-fix';
     style.textContent = `
       #qr-reader {
         width: 100% !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
       }
+      /* Force video to be square by using object-fit and aspect-ratio */
       #qr-reader video {
         object-fit: cover !important;
+        aspect-ratio: 1 / 1 !important;
+        width: 100% !important;
+        height: auto !important;
         border-radius: 0.5rem;
+      }
+      /* Also force canvas elements to match */
+      #qr-reader canvas {
+        aspect-ratio: 1 / 1 !important;
       }
       #qr-reader__scan_region {
         min-height: unset !important;
+        aspect-ratio: 1 / 1 !important;
+        overflow: hidden !important;
       }
-      #qr-reader__dashboard {
+      #qr-reader__scan_region img,
+      #qr-reader__scan_region br,
+      #qr-reader__dashboard,
+      #qr-reader__dashboard_section,
+      #qr-reader__dashboard_section_csr {
         display: none !important;
+      }
+      /* Fix the shaded region overlay */
+      #qr-shaded-region {
+        border-width: 50px !important;
       }
     `;
     document.head.appendChild(style);
