@@ -26,6 +26,51 @@ const Scanner = () => {
   const scannerRef = useRef(null);
 
   useEffect(() => {
+    // Inject CSS fix for html5-qrcode internal elements to prevent distortion
+    const style = document.createElement('style');
+    style.id = 'qr-scanner-fix';
+    style.textContent = `
+      #qr-reader {
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      #qr-reader video {
+        object-fit: cover !important;
+        border-radius: 0.5rem;
+      }
+      #qr-reader__scan_region {
+        min-height: unset !important;
+      }
+      #qr-reader__dashboard {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      const existingStyle = document.getElementById('qr-scanner-fix');
+      if (existingStyle) existingStyle.remove();
+    };
+  }, []);
+
+  // QR box function that ensures SQUARE overlay on all devices
+  const qrboxFunction = (viewfinderWidth, viewfinderHeight) => {
+    const minDimension = Math.min(viewfinderWidth, viewfinderHeight);
+    const boxSize = Math.floor(minDimension * 0.65);
+    // DEBUG: Log to verify same config on mobile and desktop (remove after verification)
+    console.log('[QR Scanner Config]', {
+      viewfinderWidth,
+      viewfinderHeight,
+      minDimension,
+      boxSize,
+      isSquare: true,
+      device: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+    });
+    return { width: boxSize, height: boxSize };
+  };
+
+  useEffect(() => {
     if (scanning) {
       scannerRef.current = new Html5Qrcode(readerId);
       scannerRef.current
@@ -34,12 +79,7 @@ const Scanner = () => {
           {
             fps: 10,
             // Responsive square qrbox - function ensures it adapts to screen size
-            qrbox: (viewfinderWidth, viewfinderHeight) => {
-              // Use 70% of the smaller dimension to ensure square fits on all screens
-              const minDimension = Math.min(viewfinderWidth, viewfinderHeight);
-              const boxSize = Math.floor(minDimension * 0.7);
-              return { width: boxSize, height: boxSize };
-            },
+            qrbox: qrboxFunction,
             aspectRatio: 1.0, // Force 1:1 aspect ratio (square)
             // Only support QR codes - use proper enum constant, not magic number
             formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
@@ -276,7 +316,7 @@ const Scanner = () => {
         </button>
       )}
 
-      <div id={readerId} className="w-full h-64 mb-3 bg-gray-100 rounded-lg"></div>
+      <div id={readerId} className="w-full aspect-square max-h-80 mb-3 bg-gray-100 rounded-lg overflow-hidden"></div>
       <div className="text-sm text-gray-700 mb-4 text-center font-normal">Наведите камеру на QR-код карты клиента</div>
 
       <form onSubmit={handleManualSubmit} className="flex gap-2 mb-4">
