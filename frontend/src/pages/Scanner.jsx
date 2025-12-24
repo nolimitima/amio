@@ -1,6 +1,6 @@
 // src/pages/Scanner.jsx
 import React, { useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { useAuth } from "../context/AuthContext.jsx";
 import { supabase } from "../supabaseClient.js";
 
@@ -33,8 +33,16 @@ const Scanner = () => {
           { facingMode: "environment" },
           {
             fps: 10,
-            qrbox: { width: 250, height: 250 },
-            formatsToSupport: [0] // 0 = QR_CODE only (Html5QrcodeSupportedFormats.QR_CODE)
+            // Responsive square qrbox - function ensures it adapts to screen size
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              // Use 70% of the smaller dimension to ensure square fits on all screens
+              const minDimension = Math.min(viewfinderWidth, viewfinderHeight);
+              const boxSize = Math.floor(minDimension * 0.7);
+              return { width: boxSize, height: boxSize };
+            },
+            aspectRatio: 1.0, // Force 1:1 aspect ratio (square)
+            // Only support QR codes - use proper enum constant, not magic number
+            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
           },
           async (decodedText) => {
             await handleScan(decodedText);
@@ -250,14 +258,14 @@ const Scanner = () => {
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-xl">
-      <h1 className="text-2xl font-light text-gray-900 mb-6">Сканирование карты</h1>
+      <h1 className="text-2xl font-light text-gray-900 mb-6">Сканирование QR-кода карты</h1>
 
       {!scanning ? (
         <button
           className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl text-lg font-semibold transition-colors shadow-md mb-4"
           onClick={() => setScanning(true)}
         >
-          📷 Запустить сканер
+          📷 Запустить сканер QR
         </button>
       ) : (
         <button
@@ -269,7 +277,7 @@ const Scanner = () => {
       )}
 
       <div id={readerId} className="w-full h-64 mb-3 bg-gray-100 rounded-lg"></div>
-      <div className="text-sm text-gray-700 mb-4 text-center font-normal">Наведите камеру на QR-код карты</div>
+      <div className="text-sm text-gray-700 mb-4 text-center font-normal">Наведите камеру на QR-код карты клиента</div>
 
       <form onSubmit={handleManualSubmit} className="flex gap-2 mb-4">
         <input
