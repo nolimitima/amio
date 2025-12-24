@@ -413,10 +413,10 @@ const Dashboard = () => {
         {/* SIDEBAR */}
         <div className="w-full lg:w-64 lg:flex-shrink-0">
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-white/50">
-            <nav className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible">
+            <nav className="flex flex-col gap-2">
               <button
                 onClick={() => setActiveTab('cards')}
-                className={`whitespace-nowrap lg:w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'cards'
+                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'cards'
                   ? 'bg-[#D1E889] text-[#121E1D]'
                   : 'text-[#121E1D] hover:bg-[#D1E889]/20'
                   }`}
@@ -425,7 +425,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('create')}
-                className={`whitespace-nowrap lg:w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'create'
+                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'create'
                   ? 'bg-[#D1E889] text-[#121E1D]'
                   : 'text-[#121E1D] hover:bg-[#D1E889]/20'
                   }`}
@@ -434,7 +434,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('scans')}
-                className={`whitespace-nowrap lg:w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'scans'
+                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'scans'
                   ? 'bg-[#D1E889] text-[#121E1D]'
                   : 'text-[#121E1D] hover:bg-[#D1E889]/20'
                   }`}
@@ -443,7 +443,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`whitespace-nowrap lg:w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'settings'
+                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'settings'
                   ? 'bg-[#D1E889] text-[#121E1D]'
                   : 'text-[#121E1D] hover:bg-[#D1E889]/20'
                   }`}
@@ -452,7 +452,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('registration')}
-                className={`whitespace-nowrap lg:w-full text-left px-4 py-3 rounded-xl font-light transition-all duration-200 ${activeTab === 'registration'
+                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'registration'
                   ? 'bg-[#D1E889] text-[#121E1D]'
                   : 'text-[#121E1D] hover:bg-[#D1E889]/20'
                   }`}

@@ -31,7 +31,11 @@ const Scanner = () => {
       scannerRef.current
         .start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            formatsToSupport: [0] // 0 = QR_CODE only (Html5QrcodeSupportedFormats.QR_CODE)
+          },
           async (decodedText) => {
             await handleScan(decodedText);
           }
