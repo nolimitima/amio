@@ -278,8 +278,8 @@ const Dashboard = () => {
   const cardPreview = (
     <div
       className="
-      w-[430px] max-w-full
-      min-h-[680px]
+      w-[400px] max-w-full
+      min-h-[580px]
       rounded-2xl shadow-lg flex flex-col overflow-hidden relative mx-auto
       transition-all duration-300
     "
