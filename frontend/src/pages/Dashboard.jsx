@@ -278,8 +278,8 @@ const Dashboard = () => {
   const cardPreview = (
     <div
       className="
-      w-[400px] max-w-full
-      min-h-[580px]
+      w-[380px] max-w-full
+      min-h-[550px]
       rounded-2xl shadow-lg flex flex-col overflow-hidden relative mx-auto
       transition-all duration-300
     "
@@ -339,7 +339,7 @@ const Dashboard = () => {
             >
               Гость
             </span>
-            <span className="text-sm font-semibold truncate" style={{ color: valueColor, maxWidth: 200 }}>
+            <span className="text-sm font-medium truncate" style={{ color: valueColor, maxWidth: 200 }}>
               {guestName || 'Имя Клиента'}
             </span>
           </div>
@@ -351,7 +351,7 @@ const Dashboard = () => {
             >
               Бонус
             </span>
-            <span className="text-sm font-semibold" style={{ color: valueColor }}>
+            <span className="text-sm font-medium" style={{ color: valueColor }}>
               {bonusPercent || 0}%
             </span>
           </div>
