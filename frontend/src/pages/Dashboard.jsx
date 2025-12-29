@@ -84,7 +84,7 @@ const Dashboard = () => {
   // Protection against null - show loading until user is ready
   if (!currentUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
+      <div className="min-h-screen flex items-center justify-center text-neutral-700">
         Загрузка...
       </div>
     );
@@ -334,7 +334,7 @@ const Dashboard = () => {
         <div className="flex justify-between items-end px-4 py-4 mt-1">
           <div className="flex flex-col items-start min-w-0">
             <span
-              className="text-[10px] uppercase tracking-wider mb-0.5 opacity-80"
+              className="text-[10px] uppercase tracking-wider mb-0.5"
               style={{ color: labelColor }}
             >
               Гость
@@ -346,7 +346,7 @@ const Dashboard = () => {
 
           <div className="flex flex-col items-end flex-shrink-0">
             <span
-              className="text-[10px] uppercase tracking-wider mb-0.5 opacity-80"
+              className="text-[10px] uppercase tracking-wider mb-0.5"
               style={{ color: labelColor }}
             >
               Бонус
@@ -371,7 +371,7 @@ const Dashboard = () => {
           />
         </div>
 
-        <div className="mt-2 text-[10px] text-center font-mono opacity-80" style={{ color: valueColor }}>
+        <div className="mt-2 text-[10px] text-center font-mono" style={{ color: valueColor }}>
           {placeholderUser[qrValue] || qrValue || 'QR Code'}
         </div>
       </div>
@@ -575,11 +575,11 @@ const Dashboard = () => {
                           {card.logo_url && <img src={card.logo_url} alt="logo" className="w-12 h-12 rounded bg-white/80 object-contain flex-shrink-0" />}
                           <div className="min-w-0 flex-1">
                             <h3 className="text-lg font-light text-[#121E1D] mb-1 break-words">{card.user_facing_name || card.internal_name}</h3>
-                            <div className="text-xs text-gray-500 break-all">ID: {card.id}</div>
+                            <div className="text-xs text-neutral-700 break-all">ID: {card.id}</div>
                           </div>
                         </div>
                         <div className="text-[#232823] font-extralight mb-2 break-words">{card.description}</div>
-                        <div className="flex flex-col sm:flex-row sm:gap-4 gap-1 text-xs text-gray-600 mb-2">
+                        <div className="flex flex-col sm:flex-row sm:gap-4 gap-1 text-xs text-neutral-700 mb-2">
                           {card.contact_email && <div className="break-all">Email: {card.contact_email}</div>}
                           {card.contact_phone && <div className="break-all">Телефон: {card.contact_phone}</div>}
                           {card.website_url && <div className="break-all">Сайт: <a href={card.website_url} className="underline" target="_blank" rel="noopener noreferrer">{card.website_url}</a></div>}
@@ -626,15 +626,15 @@ const Dashboard = () => {
                     <div className="mb-3">
                       <label htmlFor="logoInput" className="block text-xs mb-1 font-medium text-[#232323] font-light">Загрузка логотипа</label>
                       <input id="logoInput" name="logoInput" type="file" accept="image/*" ref={logoInput} onChange={handleLogo} className="w-full text-xs" />
-                      <div className="text-[10px] text-gray-400 mt-1">60x45 px, PNG/SVG/JPG, отображается в левом верхнем углу</div>
-                      {logo && <div className="text-[10px] text-gray-600 mt-1">Выбран файл: {logo.name}</div>}
+                      <div className="text-[10px] text-neutral-600 mt-1">60x45 px, PNG/SVG/JPG, отображается в левом верхнем углу</div>
+                      {logo && <div className="text-[10px] text-neutral-700 mt-1">Выбран файл: {logo.name}</div>}
                       {errors.logo && <div className="text-xs text-red-500 mt-1">{errors.logo}</div>}
                     </div>
                     <div className="mb-3">
                       <label htmlFor="bgInput" className="block text-xs mb-1 font-medium text-[#232323] font-light">Загрузка обложки</label>
                       <input id="bgInput" name="bgInput" type="file" accept="image/*" ref={bgInput} onChange={handleBg} className="w-full text-xs" />
-                      <div className="text-[10px] text-gray-400 mt-1">1000x648 px, заменяет цвет фона</div>
-                      {bg && <div className="text-[10px] text-gray-600 mt-1">Выбран файл: {bg.name}</div>}
+                      <div className="text-[10px] text-neutral-600 mt-1">1000x648 px, заменяет цвет фона</div>
+                      {bg && <div className="text-[10px] text-neutral-700 mt-1">Выбран файл: {bg.name}</div>}
                     </div>
                     <div className="flex gap-4 mb-3">
                       <div>
@@ -659,7 +659,7 @@ const Dashboard = () => {
                         </select>
                         <input value={qrValue} onChange={e => setQrValue(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-xs w-40 text-gray-900 bg-white placeholder-gray-400" />
                       </div>
-                      <div className="text-[10px] text-gray-400 mt-1">По умолчанию: user.memberId</div>
+                      <div className="text-[10px] text-neutral-600 mt-1">По умолчанию: user.memberId</div>
                     </div>
                   </>
                 )}
@@ -732,7 +732,7 @@ const Dashboard = () => {
                         onChange={e => setGuestName(e.target.value)}
                         placeholder="Например, Илон Маск"
                       />
-                      <div className="text-[10px] text-gray-400 mt-1">Это значение будет автоматически подставлено для каждого пользователя (user.fullName)</div>
+                      <div className="text-[10px] text-neutral-600 mt-1">Это значение будет автоматически подставлено для каждого пользователя (user.fullName)</div>
                     </div>
                     <div className="mb-4">
                       <label className="block text-[10px] font-medium text-[#232323] mb-1 flex items-center gap-2">
@@ -747,7 +747,7 @@ const Dashboard = () => {
                         onChange={e => setBonusPercent(e.target.value)}
                         placeholder="Например, 5"
                       />
-                      <div className="text-[10px] text-gray-400 mt-1">Это значение будет автоматически подставлено для каждого пользователя (user.bonusPercentage)</div>
+                      <div className="text-[10px] text-neutral-600 mt-1">Это значение будет автоматически подставлено для каждого пользователя (user.bonusPercentage)</div>
                     </div>
                   </div>
                 )}
@@ -766,7 +766,7 @@ const Dashboard = () => {
               <div className="flex-1 flex flex-col items-center">
                 <div className="flex flex-col gap-2 items-center">
                   {cardPreview}
-                  <div className="text-xs text-gray-400 mt-1">Live preview</div>
+                  <div className="text-xs text-neutral-600 mt-1">Live preview</div>
                 </div>
               </div>
             </form>
@@ -779,7 +779,7 @@ const Dashboard = () => {
       {issueModal.open && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-4 sm:p-8 shadow-xl w-full max-w-md relative">
-            <button className="absolute top-2 right-2 text-gray-400 hover:text-black text-2xl" onClick={() => setIssueModal({ open: false, card: null, data: null, loading: false, error: null })}>&times;</button>
+            <button className="absolute top-2 right-2 text-neutral-600 hover:text-black text-2xl" onClick={() => setIssueModal({ open: false, card: null, data: null, loading: false, error: null })}>&times;</button>
             <h2 className="text-xl font-light mb-4">Выдача карты</h2>
             {!issueModal.data && !issueModal.loading && (
               <form onSubmit={async (e) => { e.preventDefault(); await handleIssueCard(issueModal.card); }} className="flex flex-col gap-4 mb-4">
@@ -814,7 +814,7 @@ const Dashboard = () => {
               <div className="flex flex-col items-center gap-4">
                 <a href={issueModal.data.pkpassUrl} target="_blank" rel="noopener noreferrer" className="bg-[#D1E889] text-[#121E1D] rounded px-4 py-2 font-light mb-2">Скачать карту (.pkpass)</a>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">QR-код для добавления</div>
+                  <div className="text-xs text-neutral-700 mb-1">QR-код для добавления</div>
                   <img src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(issueModal.data.qrUrl)}`} alt="QR code" className="w-40 h-40" />
                 </div>
               </div>

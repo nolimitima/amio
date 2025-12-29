@@ -129,14 +129,14 @@ export default function ScanLogsList() {
           <tbody>
             {loading && (
               <tr>
-                <td className="py-4 px-3 text-gray-500" colSpan={7}>
+                <td className="py-4 px-3 text-neutral-700" colSpan={7}>
                   Загрузка…
                 </td>
               </tr>
             )}
             {!loading && rows.length === 0 && (
               <tr>
-                <td className="py-4 px-3 text-gray-500" colSpan={7}>
+                <td className="py-4 px-3 text-neutral-700" colSpan={7}>
                   Записей нет
                 </td>
               </tr>
@@ -168,7 +168,7 @@ export default function ScanLogsList() {
         >
           Назад
         </button>
-        <div className="text-sm text-gray-600">Стр. {page}</div>
+        <div className="text-sm text-neutral-700">Стр. {page}</div>
         <button
           className="px-3 py-1 rounded bg-gray-100"
           onClick={() => setPage((p) => p + 1)}

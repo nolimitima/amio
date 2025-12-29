@@ -15,7 +15,7 @@ const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500">Загрузка...</div>;
+    return <div className="min-h-screen flex items-center justify-center text-neutral-700">Загрузка...</div>;
   }
 
   if (!isAuthenticated) {
@@ -35,25 +35,25 @@ function AppRoutes() {
       <Route path="/card/:id" element={<CardPreview />} />
       <Route path="/join/:slug" element={<JoinForm />} />
       <Route path="/join/success" element={<JoinSuccess />} />
-      
+
       {/* --- Защищенные маршруты --- */}
-      <Route 
-        path="/dashboard" 
+      <Route
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
-        } 
+        }
       />
 
       {/* ✅ 2. Добавляем новый защищенный маршрут для сканера */}
-      <Route 
-        path="/scanner" 
+      <Route
+        path="/scanner"
         element={
           <ProtectedRoute>
             <Scanner />
           </ProtectedRoute>
-        } 
+        }
       />
     </Routes>
   )

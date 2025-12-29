@@ -319,14 +319,14 @@ const Scanner = () => {
 
       {!scanning ? (
         <button
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl text-lg font-semibold transition-colors shadow-md mb-4"
+          className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl text-lg font-medium transition-colors shadow-md mb-4"
           onClick={() => setScanning(true)}
         >
           📷 Запустить сканер QR
         </button>
       ) : (
         <button
-          className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-xl text-lg font-semibold transition-colors shadow-md mb-4"
+          className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-xl text-lg font-medium transition-colors shadow-md mb-4"
           onClick={stopScanner}
         >
           ⏹ Остановить сканер
@@ -344,7 +344,7 @@ const Scanner = () => {
           value={manual}
           onChange={(e) => setManual(e.target.value)}
         />
-        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-semibold transition-colors">
+        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-medium transition-colors">
           OK
         </button>
       </form>
@@ -361,7 +361,7 @@ const Scanner = () => {
               <h2 className="text-2xl font-light text-white mb-1">{scannedCard.guest_name}</h2>
               <div className="flex items-center gap-2">
                 <span className="text-blue-100 text-sm font-light">Баланс:</span>
-                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold text-sm">
+                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium text-sm">
                   {scannedCard.balance} B
                 </span>
               </div>
@@ -393,7 +393,7 @@ const Scanner = () => {
                 <div className="flex items-center gap-3">
                   <span className="text-gray-900 font-normal">Списать бонусы</span>
                   {usePoints && (
-                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-xs font-medium">
                       АКТИВНО
                     </span>
                   )}
@@ -426,19 +426,19 @@ const Scanner = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-700 text-sm font-normal">Списано бонусов:</span>
-                        <span className="font-semibold text-gray-900">-{calculation.pointsUsed} B</span>
+                        <span className="font-medium text-gray-900">-{calculation.pointsUsed} B</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-700 text-sm font-normal">К оплате наличными:</span>
-                        <span className="font-semibold text-gray-900">{calculation.toPay} ₸</span>
+                        <span className="font-medium text-gray-900">{calculation.toPay} ₸</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-700 text-sm font-normal">Начислено за оплату:</span>
-                        <span className="font-semibold text-gray-900">+{calculation.pointsEarned} B</span>
+                        <span className="font-medium text-gray-900">+{calculation.pointsEarned} B</span>
                       </div>
                       <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between items-center">
-                        <span className="text-gray-900 font-semibold">Итого изменение:</span>
-                        <span className={`font-semibold text-lg ${calculation.netChange >= 0 ? 'text-green-600' : 'text-red-600'
+                        <span className="text-gray-900 font-medium">Итого изменение:</span>
+                        <span className={`font-medium text-lg ${calculation.netChange >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
                           {calculation.netChange >= 0 ? '+' : ''}{calculation.netChange} B
                         </span>
@@ -450,7 +450,7 @@ const Scanner = () => {
 
               {/* Notification */}
               {notification && (
-                <div className={`mb-6 p-4 rounded-xl text-center font-semibold ${notification.type === 'success'
+                <div className={`mb-6 p-4 rounded-xl text-center font-medium ${notification.type === 'success'
                   ? 'bg-green-50 text-green-700 border border-green-200'
                   : 'bg-red-50 text-red-700 border border-red-200'
                   }`}>
@@ -468,7 +468,7 @@ const Scanner = () => {
                   Отмена
                 </button>
                 <button
-                  className="flex-1 h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:shadow-none"
+                  className="flex-1 h-14 bg-blue-600 hover:bg-blue-700 text-white font-medium text-lg rounded-xl shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:shadow-none"
                   onClick={handleProcessPayment}
                   disabled={processing || !billAmount}
                 >

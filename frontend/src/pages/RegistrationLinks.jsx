@@ -76,7 +76,7 @@ export default function RegistrationLinks() {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td className="px-3 py-4 text-gray-500" colSpan={4}>Пока нет ссылок</td></tr>}
+            {rows.length === 0 && <tr><td className="px-3 py-4 text-neutral-700" colSpan={4}>Пока нет ссылок</td></tr>}
           </tbody>
         </table>
       </div>

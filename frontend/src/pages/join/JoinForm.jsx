@@ -66,7 +66,7 @@ export default function JoinForm() {
   return (
     <BrandLayout branding={branding}>
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-semibold mb-2 text-white">
+        <h1 className="text-3xl font-medium mb-2 text-white">
           Подключить карту лояльности
         </h1>
         <p className="text-white/60">

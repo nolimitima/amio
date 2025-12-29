@@ -149,7 +149,7 @@ const Home = () => {
             <h2 className="text-2xl md:text-3xl font-extralight text-[#121E1D] text-center mb-6">Как это работает — всего 3 шага.</h2>
             <div className="flex flex-col md:flex-row gap-8 w-full justify-center items-center">
               {steps.map((s, i) => (
-                <div key={i} className="flex-1 bg-white rounded-[32px] p-10 text-center text-[#121E1D] font-light text-2xl font-semibold min-w-[240px] max-w-[340px] flex items-center justify-center h-44 shadow-sm">
+                <div key={i} className="flex-1 bg-white rounded-[32px] p-10 text-center text-[#121E1D] font-medium text-2xl min-w-[240px] max-w-[340px] flex items-center justify-center h-44 shadow-sm">
                   {s}
                 </div>
               ))}
