@@ -27,44 +27,40 @@ const Scanner = () => {
 
   useEffect(() => {
     // Inject CSS fix for html5-qrcode internal elements to force SQUARE viewfinder
-    // IMPORTANT: These styles are SCOPED to #qr-reader only to avoid affecting other QR components
     const style = document.createElement('style');
     style.id = 'qr-scanner-fix';
     style.textContent = `
-      /* All styles scoped to #qr-reader to avoid affecting Dashboard card preview */
-      div#qr-reader {
+      #qr-reader {
         width: 100% !important;
         max-width: 100% !important;
         overflow: hidden !important;
       }
       /* Force video to be square by using object-fit and aspect-ratio */
-      div#qr-reader > video,
-      div#qr-reader video {
+      #qr-reader video {
         object-fit: cover !important;
         aspect-ratio: 1 / 1 !important;
         width: 100% !important;
         height: auto !important;
         border-radius: 0.5rem;
       }
-      /* Also force canvas elements to match - only inside qr-reader */
-      div#qr-reader > canvas,
-      div#qr-reader canvas {
+      /* Also force canvas elements to match */
+      #qr-reader canvas {
         aspect-ratio: 1 / 1 !important;
       }
-      div#qr-reader #qr-reader__scan_region {
+      #qr-reader__scan_region {
         min-height: unset !important;
         aspect-ratio: 1 / 1 !important;
         overflow: hidden !important;
       }
-      div#qr-reader #qr-reader__scan_region img,
-      div#qr-reader #qr-reader__scan_region br,
-      div#qr-reader #qr-reader__dashboard,
-      div#qr-reader #qr-reader__dashboard_section,
-      div#qr-reader #qr-reader__dashboard_section_csr {
+      #qr-reader__scan_region img,
+      #qr-reader__scan_region br,
+      #qr-reader__dashboard,
+      #qr-reader__dashboard_section,
+      #qr-reader__dashboard_section_csr {
         display: none !important;
       }
       /* Fix the shaded region overlay */
-      div#qr-reader #qr-shaded-region {
+      #qr-shaded-region {
         border-width: 50px !important;
       }
     `;

@@ -276,7 +276,7 @@ const Dashboard = () => {
 
   // И ЗАМЕНИТЕ ЕГО НА ЭТОТ
   const cardPreview = (
-    <div className="w-full max-w-[340px] h-[480px] rounded-2xl shadow-lg flex flex-col overflow-hidden relative mx-auto" style={{ background: bgColor }}>
+    <div className="w-full max-w-[420px] min-w-[340px] rounded-2xl shadow-lg flex flex-col overflow-hidden relative mx-auto" style={{ background: bgColor }}>
       {/* Верхняя панель: логотип слева, баланс справа */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <div className="flex items-center gap-3">
@@ -296,9 +296,9 @@ const Dashboard = () => {
       </div>
       {/* Cover image */}
       {bgUrl ? (
-        <img src={bgUrl} alt="cover" className="w-full h-[110px] object-cover" />
+        <img src={bgUrl} alt="cover" className="w-full h-[80px] object-cover" />
       ) : (
-        <div className="w-full h-[110px] bg-[#23283a] flex items-center justify-center text-white/30 text-sm">cover</div>
+        <div className="w-full h-[80px] bg-[#23283a] flex items-center justify-center text-white/30 text-sm">cover</div>
       )}
       {/* --- Имя клиента и бонус только на лицевой стороне --- */}
       {createTab === 0 && (
@@ -315,9 +315,9 @@ const Dashboard = () => {
       )}
 
       {/* 👇 ЭТОТ БЛОК БЫЛ ВОССТАНОВЛЕН */}
-      <div className="flex flex-col items-center px-6 pb-4 mt-auto">
-        <div className="bg-white p-3 rounded border inline-flex">
-          <QRCode value={(placeholderUser[qrValue] || qrValue) ? `${window.location.origin}/api/passes/${placeholderUser[qrValue] || qrValue}` : ''} size={120} />
+      <div className="flex flex-col items-center px-6 pb-3 mt-auto">
+        <div className="bg-white p-2 rounded border inline-flex">
+          <QRCode value={(placeholderUser[qrValue] || qrValue) ? `${window.location.origin}/api/passes/${placeholderUser[qrValue] || qrValue}` : ''} size={90} />
         </div>
         <div className="mt-1 text-xs text-center break-all" style={{ color: valueColor }}>
           {placeholderUser[qrValue] || qrValue || ''}
