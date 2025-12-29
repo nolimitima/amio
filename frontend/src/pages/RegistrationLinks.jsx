@@ -49,7 +49,7 @@ export default function RegistrationLinks() {
 
   return (
     <div>
-      <h2 className="text-2xl font-extralight mb-4">Ссылки регистрации</h2>
+      <h2 className="text-2xl font-extralight text-neutral-900 mb-4">Ссылки регистрации</h2>
       <div className="flex gap-2 mb-4">
         <input className="border border-gray-300 rounded px-2 py-1 text-gray-900 bg-white placeholder-gray-400" placeholder="Короткая ссылка (необ.)" value={slug} onChange={e => setSlug(e.target.value)} />
         <select className="border border-gray-300 rounded px-2 py-1 text-gray-900 bg-white" value={tplId} onChange={e => setTplId(e.target.value)}>
@@ -61,17 +61,17 @@ export default function RegistrationLinks() {
       </div>
 
       <div className="overflow-auto rounded-xl border">
-        <table className="min-w-full text-sm">
-          <thead><tr><th className="px-3 py-2">Slug</th><th className="px-3 py-2">Шаблон</th><th className="px-3 py-2">Статус</th><th></th></tr></thead>
+        <table className="min-w-full text-sm text-neutral-900">
+          <thead className="bg-gray-50 font-medium"><tr><th className="px-3 py-2">Slug</th><th className="px-3 py-2">Шаблон</th><th className="px-3 py-2">Статус</th><th></th></tr></thead>
           <tbody>
             {rows.map(r => (
-              <tr key={r.id} className="border-t">
+              <tr key={r.id} className="border-t text-neutral-900">
                 <td className="px-3 py-2 font-mono">{r.slug}</td>
                 <td className="px-3 py-2">{r.card_template_id}</td>
                 <td className="px-3 py-2">{r.is_active ? 'active' : 'inactive'}</td>
                 <td className="px-3 py-2">
-                  <button className="border rounded px-2 py-1 mr-2" onClick={() => toggle(r.id, r.is_active)}>{r.is_active ? 'Выключить' : 'Включить'}</button>
-                  <button className="border rounded px-2 py-1"
+                  <button className="border rounded px-2 py-1 mr-2 text-neutral-900" onClick={() => toggle(r.id, r.is_active)}>{r.is_active ? 'Выключить' : 'Включить'}</button>
+                  <button className="border rounded px-2 py-1 text-neutral-900"
                     onClick={() => navigator.clipboard.writeText(`${window.location.origin}/join/${r.slug}`)}>Копировать ссылку</button>
                 </td>
               </tr>

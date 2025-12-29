@@ -53,7 +53,7 @@ export default function ScanLogsList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-extralight text-[#121E1D]">Сканы</h2>
+        <h2 className="text-2xl font-extralight text-neutral-900 mb-6">Сканы</h2>
         <a href="/scanner" className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-light transition-all duration-200 shadow-md flex items-center gap-2">
           📷 Открыть Сканер
         </a>
@@ -90,7 +90,7 @@ export default function ScanLogsList() {
           onChange={(e) => setDateTo(e.target.value)}
         />
         <button
-          className="border rounded px-3 py-1 text-sm hover:bg-gray-50"
+          className="border rounded px-3 py-1 text-sm text-neutral-900 hover:bg-gray-50"
           onClick={() => {
             setPage(1);
             load();
@@ -99,7 +99,7 @@ export default function ScanLogsList() {
           Применить
         </button>
         <button
-          className="border rounded px-3 py-1 text-sm hover:bg-gray-50"
+          className="border rounded px-3 py-1 text-sm text-neutral-900 hover:bg-gray-50"
           onClick={() => {
             setActionFilter('');
             setSearch('');
@@ -115,7 +115,7 @@ export default function ScanLogsList() {
 
       <div className="overflow-auto rounded-xl border border-[#121E1D]/10">
         <table className="min-w-full text-sm bg-white">
-          <thead className="text-left bg-gray-50">
+          <thead className="text-left bg-gray-50 text-neutral-900 font-medium">
             <tr>
               <th className="py-2 px-3">Время</th>
               <th className="py-2 px-3">Карта</th>
@@ -143,7 +143,7 @@ export default function ScanLogsList() {
             )}
             {!loading &&
               rows.map((r) => (
-                <tr key={r.id} className="border-b last:border-0">
+                <tr key={r.id} className="border-b last:border-0 text-neutral-900">
                   <td className="py-2 px-3 whitespace-nowrap">
                     {new Date(r.scanned_at).toLocaleString()}
                   </td>

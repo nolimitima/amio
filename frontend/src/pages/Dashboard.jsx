@@ -595,12 +595,12 @@ const Dashboard = () => {
             </>
           )}
           {activeTab === 'scans' && (
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-white/50">
+            <div className="bg-white rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-neutral-200">
               <ScanLogsList />
             </div>
           )}
           {activeTab === 'registration' && (
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-white/50">
+            <div className="bg-white rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-neutral-200">
               <RegistrationLinks />
             </div>
           )}
