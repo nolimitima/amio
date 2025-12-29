@@ -274,19 +274,32 @@ const Dashboard = () => {
     }
   };
 
-  // И ЗАМЕНИТЕ ЕГО НА ЭТОТ
+
   const cardPreview = (
-    <div className="w-full max-w-[300px] rounded-2xl shadow-lg flex flex-col overflow-hidden relative mx-auto" style={{ background: bgColor }}>
+    <div
+      className="w-full max-w-[350px] min-h-[500px] rounded-2xl shadow-lg flex flex-col overflow-hidden relative mx-auto transition-all duration-300"
+      style={{ background: bgColor }}
+    >
       {/* Верхняя панель: логотип слева, баланс справа */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <div className="flex items-center gap-3">
           {logoUrl ? (
-            <img src={logoUrl} alt="logo" className="w-12 h-12 rounded bg-white/80 object-contain" style={{ width: 50, height: 38 }} />
+            <img
+              src={logoUrl}
+              alt="logo"
+              className="w-12 h-12 rounded bg-white/80 object-contain"
+              style={{ width: 50, height: 38 }}
+            />
           ) : (
             <div className="w-12 h-10 rounded bg-white/20" />
           )}
           {userFacingName && (
-            <span className="text-sm font-normal" style={{ color: labelColor, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userFacingName}</span>
+            <span
+              className="text-sm font-normal"
+              style={{ color: labelColor, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            >
+              {userFacingName}
+            </span>
           )}
         </div>
         <div className="flex flex-col items-end px-2 py-1 min-w-[70px]" style={{ background: 'transparent' }}>
@@ -294,33 +307,40 @@ const Dashboard = () => {
           <span className="text-base font-medium" style={{ color: valueColor }}>{balance} B</span>
         </div>
       </div>
-      {/* Cover image */}
+
+      {/* Cover image (Strip) */}
       {bgUrl ? (
-        <img src={bgUrl} alt="cover" className="w-full h-[70px] object-cover" />
+        <img src={bgUrl} alt="cover" className="w-full h-[144px] object-cover" />
       ) : (
-        <div className="w-full h-[70px] bg-[#23283a] flex items-center justify-center text-white/30 text-xs">cover</div>
+        <div className="w-full h-[144px] bg-[#23283a] flex items-center justify-center text-white/30 text-xs">
+          Strip Image (1125x432)
+        </div>
       )}
-      {/* --- Имя клиента и бонус только на лицевой стороне --- */}
+
+      {/* --- Имя клиента и бонус (Поля) --- */}
       {createTab === 0 && (
-        <div className="flex justify-between items-end px-4 py-2 mt-1">
+        <div className="flex justify-between items-end px-4 py-4 mt-1">
           <div className="flex flex-col items-start">
-            <span className="text-[10px] mb-0.5" style={{ color: labelColor }}>Гость</span>
-            <span className="text-xs font-medium" style={{ color: valueColor }}>{guestName || 'Имя клиента'}</span>
+            <span className="text-[10px] uppercase tracking-wider mb-0.5 opacity-80" style={{ color: labelColor }}>Гость</span>
+            <span className="text-sm font-semibold" style={{ color: valueColor }}>{guestName || 'Имя Клиента'}</span>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-[10px] mb-0.5" style={{ color: labelColor }}>Бонус</span>
-            <span className="text-xs font-medium" style={{ color: valueColor }}>{bonusPercent || 0}%</span>
+            <span className="text-[10px] uppercase tracking-wider mb-0.5 opacity-80" style={{ color: labelColor }}>Бонус</span>
+            <span className="text-sm font-semibold" style={{ color: valueColor }}>{bonusPercent || 0}%</span>
           </div>
         </div>
       )}
 
-      {/* QR Code */}
-      <div className="flex flex-col items-center px-4 pb-3 mt-auto">
-        <div className="bg-white p-2 rounded border inline-flex">
-          <QRCode value={(placeholderUser[qrValue] || qrValue) ? `${window.location.origin}/api/passes/${placeholderUser[qrValue] || qrValue}` : ''} size={100} />
+      {/* QR Code (Всегда внизу благодаря mt-auto) */}
+      <div className="flex flex-col items-center px-4 pb-6 mt-auto">
+        <div className="bg-white p-2 rounded-xl border border-gray-100 inline-flex shadow-sm">
+          <QRCode
+            value={(placeholderUser[qrValue] || qrValue) ? `${window.location.origin}/api/passes/${placeholderUser[qrValue] || qrValue}` : ''}
+            size={120}
+          />
         </div>
-        <div className="mt-1 text-[10px] text-center break-all" style={{ color: valueColor }}>
-          {placeholderUser[qrValue] || qrValue || ''}
+        <div className="mt-2 text-[10px] text-center font-mono opacity-80" style={{ color: valueColor }}>
+          {placeholderUser[qrValue] || qrValue || 'QR Code'}
         </div>
       </div>
 
