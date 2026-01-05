@@ -162,7 +162,7 @@ module.exports = async (req, res) => {
 
     const { data: issued, error: e1 } = await supa
       .from("issued_cards")
-      .select("uuid, guest_name, email, phone, balance, qr_value, card_template_id, auth_token")
+      .select("uuid, guest_name, email, phone, balance, qr_value, card_template_id, auth_token, promo_message")
       .eq("uuid", uuid)
       .single();
     if (e1 || !issued) return res.status(404).json({ error: "Card not found" });
@@ -250,9 +250,16 @@ module.exports = async (req, res) => {
           { key: "holder", label: "Гость", value: issued.guest_name || "Клиент" }
         ],
 
-        // auxiliary — только «Бонус %»
+        // auxiliary — Бонус + Promo message (with changeMessage for notifications)
         auxiliaryFields: [
-          { key: "bonus", label: "Бонус", value: `${Number(tpl.bonus_percent_field || 0)}%` }
+          { key: "bonus", label: "Бонус", value: `${Number(tpl.bonus_percent_field || 0)}%` },
+          // Promo field with changeMessage - triggers notification banner when updated
+          ...(issued.promo_message ? [{
+            key: "promo",
+            label: "Акция",
+            value: issued.promo_message,
+            changeMessage: "📢 %@"  // %@ will be replaced with the new value
+          }] : [])
         ],
 
         // Оборотка — бизнес-инфа

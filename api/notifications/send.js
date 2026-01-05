@@ -118,19 +118,25 @@ async function sendPushNotifications(serviceSupabase, userId, title, body, targe
         }
 
         // =========================================================================
-        // CRITICAL: Update issued_cards.updated_at so PassKit sees there's an update
-        // When Apple's Wallet asks "what changed since X?", it checks this timestamp
+        // CRITICAL: Update issued_cards with promo message + timestamp
+        // 1. updated_at → So PassKit sees there's an update
+        // 2. promo_message → The marketing message to show on the card
+        // 3. promo_updated_at → Triggers changeMessage notification banner
         // =========================================================================
         const { error: updateError } = await serviceSupabase
             .from('issued_cards')
-            .update({ updated_at: new Date().toISOString() })
+            .update({
+                updated_at: new Date().toISOString(),
+                promo_message: body,  // Store the marketing message
+                promo_updated_at: new Date().toISOString()
+            })
             .in('uuid', cardUuids);
 
         if (updateError) {
-            console.error('Failed to update issued_cards timestamps:', updateError);
+            console.error('Failed to update issued_cards:', updateError);
             // Continue anyway - push might still work
         } else {
-            console.log(`📅 Updated ${cardUuids.length} card(s) updated_at timestamp`);
+            console.log(`📅 Updated ${cardUuids.length} card(s) with promo message`);
         }
 
         // Use shared APNs provider from lib/apn.js
