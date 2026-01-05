@@ -1,10 +1,13 @@
 // api/notifications/send.js
 // Vercel Serverless Function for sending marketing push notifications
+// With REAL Apple Push Notification Service integration
 
 const { createClient } = require('@supabase/supabase-js');
+const apn = require('node-apn');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE;
+const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER;
 
 // Simple XSS sanitizer for server-side
 function sanitizeInput(text) {
@@ -15,6 +18,137 @@ function sanitizeInput(text) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;')
         .trim();
+}
+
+// Create APNs Provider from environment variables
+function createApnProvider() {
+    const p12Base64 = process.env.PASS_P12_BASE64;
+    const p12Password = process.env.PASS_P12_PASSWORD;
+
+    if (!p12Base64) {
+        throw new Error('APNs Configuration missing: PASS_P12_BASE64 is not set');
+    }
+
+    // Decode P12 from Base64 to Buffer
+    const p12Buffer = Buffer.from(p12Base64, 'base64');
+
+    const options = {
+        pfx: p12Buffer,
+        passphrase: p12Password || '',
+        production: process.env.NODE_ENV === 'production',
+        // Topic is the Pass Type Identifier for Wallet passes
+        topic: PASS_TYPE_IDENTIFIER,
+        // Handle serverless environment SSL issues
+        rejectUnauthorized: false
+    };
+
+    return new apn.Provider(options);
+}
+
+// Send push notifications to all registered devices
+async function sendPushNotifications(serviceSupabase, title, body, targetAudience) {
+    const results = {
+        sent: 0,
+        failed: 0,
+        errors: [],
+        skipped: false
+    };
+
+    // Check if APNs is configured
+    if (!process.env.PASS_P12_BASE64) {
+        console.warn('⚠️ PASS_P12_BASE64 not configured, skipping push notifications');
+        results.skipped = true;
+        return results;
+    }
+
+    try {
+        // 1. Query pass_devices table for push tokens
+        let query = serviceSupabase
+            .from('pass_devices')
+            .select('push_token')
+            .not('push_token', 'is', null);
+
+        // If test audience, we could filter by a test flag
+        // For now, 'test' sends to all (in production, add a test_device column)
+        if (targetAudience === 'test') {
+            // Future: .eq('is_test_device', true)
+            console.log('📱 Target audience: TEST GROUP (sending to all for now)');
+        } else {
+            console.log('📱 Target audience: ALL USERS');
+        }
+
+        const { data: devices, error: devicesError } = await query;
+
+        if (devicesError) {
+            console.error('Failed to fetch devices:', devicesError);
+            results.errors.push('Database error fetching devices');
+            return results;
+        }
+
+        if (!devices || devices.length === 0) {
+            console.log('📭 No registered devices found');
+            return results;
+        }
+
+        // Get unique push tokens
+        const tokens = [...new Set(devices.map(d => d.push_token).filter(Boolean))];
+        console.log(`📱 Found ${tokens.length} unique device tokens`);
+
+        if (tokens.length === 0) {
+            return results;
+        }
+
+        // 2. Create APNs provider
+        const provider = createApnProvider();
+
+        // 3. Create notification
+        const notification = new apn.Notification();
+
+        // Visible notification on lock screen
+        notification.alert = {
+            title: title,
+            body: body
+        };
+
+        // Sound for attention
+        notification.sound = 'default';
+
+        // Topic is required for Wallet passes
+        if (PASS_TYPE_IDENTIFIER) {
+            notification.topic = PASS_TYPE_IDENTIFIER;
+        }
+
+        // Badge (optional)
+        notification.badge = 1;
+
+        // 4. Send to all tokens
+        console.log('🚀 Sending push notifications...');
+        const response = await provider.send(notification, tokens);
+
+        // 5. Process results
+        if (response.sent && response.sent.length > 0) {
+            results.sent = response.sent.length;
+            console.log(`✅ Successfully sent to ${results.sent} device(s)`);
+        }
+
+        if (response.failed && response.failed.length > 0) {
+            results.failed = response.failed.length;
+            console.error(`❌ Failed to send to ${results.failed} device(s):`);
+            response.failed.forEach(failure => {
+                console.error(`  - Device: ${failure.device}, Error: ${failure.response?.reason || 'Unknown'}`);
+                results.errors.push(failure.response?.reason || 'Unknown error');
+            });
+        }
+
+        // 6. Shutdown provider
+        provider.shutdown();
+
+    } catch (err) {
+        console.error('Push notification error:', err);
+        results.errors.push(err.message);
+    }
+
+    return results;
 }
 
 module.exports = async (req, res) => {
@@ -115,24 +249,21 @@ module.exports = async (req, res) => {
         console.log('Campaign created:', campaign.id);
 
         // =========================================================================
-        // 4. PLACEHOLDER: SEND PUSH NOTIFICATIONS
+        // 4. SEND REAL PUSH NOTIFICATIONS
         // =========================================================================
-        // TODO: Connect to real Apple APNs and Firebase FCM
         console.log('='.repeat(60));
-        console.log('📱 PUSH NOTIFICATION PLACEHOLDER');
-        console.log('='.repeat(60));
-        console.log(`Target: ${targetValue === 'all' ? 'ALL USERS' : 'TEST GROUP'}`);
-        console.log(`Title: ${sanitizedTitle}`);
-        console.log(`Body: ${sanitizedBody}`);
-        console.log('Sending Push to APNs... (PLACEHOLDER - NOT CONNECTED)');
-        console.log('Sending Push to FCM... (PLACEHOLDER - NOT CONNECTED)');
+        console.log('📱 SENDING APPLE PUSH NOTIFICATIONS');
         console.log('='.repeat(60));
 
-        // In the future, this would:
-        // 1. Query all device tokens from pass_devices table
-        // 2. Filter by target_audience if 'test'
-        // 3. Send APNs push via node-apn
-        // 4. Send FCM push via firebase-admin
+        const pushResults = await sendPushNotifications(
+            serviceSupabase,
+            sanitizedTitle,
+            sanitizedBody,
+            targetValue
+        );
+
+        console.log('Push results:', pushResults);
+        console.log('='.repeat(60));
 
         // =========================================================================
         // 5. RETURN SUCCESS
@@ -140,7 +271,12 @@ module.exports = async (req, res) => {
         return res.status(200).json({
             status: 'ok',
             campaign_id: campaign.id,
-            message: 'Рассылка успешно отправлена'
+            message: 'Рассылка успешно отправлена',
+            push: {
+                sent: pushResults.sent,
+                failed: pushResults.failed,
+                skipped: pushResults.skipped
+            }
         });
 
     } catch (err) {
