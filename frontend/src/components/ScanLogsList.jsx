@@ -4,6 +4,14 @@ import { supabase } from '../supabaseClient';
 
 const PAGE_SIZE = 20;
 
+// Russian labels for action types
+const ACTION_LABELS = {
+  scan: 'Сканирование',
+  redeem: 'Списание',
+  add_bonus: 'Начисление',
+  accrue: 'Начисление',
+};
+
 export default function ScanLogsList() {
   const [rows, setRows] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -73,9 +81,9 @@ export default function ScanLogsList() {
           onChange={(e) => setActionFilter(e.target.value)}
         >
           <option value="">Все действия</option>
-          <option value="scan">scan</option>
-          <option value="redeem">redeem</option>
-          <option value="add_bonus">add_bonus</option>
+          <option value="scan">Сканирование</option>
+          <option value="redeem">Списание</option>
+          <option value="add_bonus">Начисление</option>
         </select>
         <input
           type="date"
@@ -149,7 +157,7 @@ export default function ScanLogsList() {
                   </td>
                   <td className="py-2 px-3">{r.template_name}</td>
                   <td className="py-2 px-3">{r.guest_name}</td>
-                  <td className="py-2 px-3">{r.action}</td>
+                  <td className="py-2 px-3">{ACTION_LABELS[r.action] || r.action}</td>
                   <td className="py-2 px-3">{r.amount ?? '-'}</td>
                   <td className="py-2 px-3">{r.location || '-'}</td>
                   <td className="py-2 px-3 font-mono text-xs">{r.card_uuid}</td>

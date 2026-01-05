@@ -766,7 +766,7 @@ const Dashboard = () => {
               <div className="flex-1 flex flex-col items-center">
                 <div className="flex flex-col gap-2 items-center">
                   {cardPreview}
-                  <div className="text-xs text-neutral-600 mt-1">Live preview</div>
+                  <div className="text-xs text-neutral-600 mt-1">Предпросмотр</div>
                 </div>
               </div>
             </form>

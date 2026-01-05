@@ -34,7 +34,7 @@ export default function BrandLayout({ children, branding }) {
             style={{ letterSpacing: ".02em" }}
             aria-label="Made in Amian – go to home"
           >
-            <span>made in</span>
+            <span>сделано в</span>
             <span className="font-medium underline underline-offset-4">Amian</span>
           </a>
         </div>

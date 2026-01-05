@@ -44,7 +44,7 @@ export default function JoinSuccess() {
           href={passUrl}
           className="w-full inline-flex justify-center items-center h-12 rounded-xl bg-black text-white font-medium hover:opacity-90 active:opacity-80 transition"
         >
-          Add to Apple Wallet
+          Добавить в Apple Wallet
         </a>
 
         {uuid && (
