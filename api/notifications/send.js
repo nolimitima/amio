@@ -4,6 +4,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const apn = require('node-apn');
+const apnProvider = require('../../lib/apn');  // Use shared APNs provider
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE;
@@ -18,31 +19,6 @@ function sanitizeInput(text) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;')
         .trim();
-}
-
-// Create APNs Provider from environment variables
-function createApnProvider() {
-    const p12Base64 = process.env.PASS_P12_BASE64;
-    const p12Password = process.env.PASS_P12_PASSWORD;
-
-    if (!p12Base64) {
-        throw new Error('APNs Configuration missing: PASS_P12_BASE64 is not set');
-    }
-
-    // Decode P12 from Base64 to Buffer
-    const p12Buffer = Buffer.from(p12Base64, 'base64');
-
-    const options = {
-        pfx: p12Buffer,
-        passphrase: p12Password || '',
-        production: process.env.NODE_ENV === 'production',
-        // Topic is the Pass Type Identifier for Wallet passes
-        topic: PASS_TYPE_IDENTIFIER,
-        // Handle serverless environment SSL issues
-        rejectUnauthorized: false
-    };
-
-    return new apn.Provider(options);
 }
 
 // Send push notifications to devices belonging to THIS business only
@@ -141,32 +117,39 @@ async function sendPushNotifications(serviceSupabase, userId, title, body, targe
             return results;
         }
 
-        // 2. Create APNs provider
-        const provider = createApnProvider();
+        // =========================================================================
+        // CRITICAL: Update issued_cards.updated_at so PassKit sees there's an update
+        // When Apple's Wallet asks "what changed since X?", it checks this timestamp
+        // =========================================================================
+        const { error: updateError } = await serviceSupabase
+            .from('issued_cards')
+            .update({ updated_at: new Date().toISOString() })
+            .in('uuid', cardUuids);
 
-        // 3. Create notification
-        const notification = new apn.Notification();
-
-        // Visible notification on lock screen
-        notification.alert = {
-            title: title,
-            body: body
-        };
-
-        // Sound for attention
-        notification.sound = 'default';
-
-        // Topic is required for Wallet passes
-        if (PASS_TYPE_IDENTIFIER) {
-            notification.topic = PASS_TYPE_IDENTIFIER;
+        if (updateError) {
+            console.error('Failed to update issued_cards timestamps:', updateError);
+            // Continue anyway - push might still work
+        } else {
+            console.log(`📅 Updated ${cardUuids.length} card(s) updated_at timestamp`);
         }
 
-        // Badge (optional)
-        notification.badge = 1;
+        // Use shared APNs provider from lib/apn.js
+
+        // =========================================================================
+        // APPLE WALLET PUSH FORMAT:
+        // - MUST use EMPTY payload `{}` for pass updates
+        // - This tells Wallet "hey, check for updates"
+        // - Wallet then calls GET /passkit/v1/devices/.../registrations/...
+        // - If updated_at changed, Wallet fetches new .pkpass
+        // - The notification banner appears via `changeMessage` in pass.json fields
+        // =========================================================================
+        const notification = new apn.Notification();
+        notification.topic = PASS_TYPE_IDENTIFIER;  // Required for Wallet
+        notification.payload = {};  // EMPTY payload triggers pass update flow
 
         // 4. Send to all tokens
         console.log('🚀 Sending push notifications...');
-        const response = await provider.send(notification, tokens);
+        const response = await apnProvider.send(notification, tokens);
 
         // 5. Process results
         if (response.sent && response.sent.length > 0) {
@@ -183,8 +166,7 @@ async function sendPushNotifications(serviceSupabase, userId, title, body, targe
             });
         }
 
-        // 6. Shutdown provider
-        provider.shutdown();
+        // Note: Don't shutdown shared apnProvider
 
     } catch (err) {
         console.error('Push notification error:', err);
