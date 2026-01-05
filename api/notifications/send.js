@@ -45,8 +45,8 @@ function createApnProvider() {
     return new apn.Provider(options);
 }
 
-// Send push notifications to all registered devices
-async function sendPushNotifications(serviceSupabase, title, body, targetAudience) {
+// Send push notifications to devices belonging to THIS business only
+async function sendPushNotifications(serviceSupabase, userId, title, body, targetAudience) {
     const results = {
         sent: 0,
         failed: 0,
@@ -62,22 +62,58 @@ async function sendPushNotifications(serviceSupabase, title, body, targetAudienc
     }
 
     try {
-        // 1. Query pass_devices table for push tokens
-        let query = serviceSupabase
-            .from('pass_devices')
-            .select('push_token')
-            .not('push_token', 'is', null);
+        // =========================================================================
+        // MULTI-TENANT ISOLATION: Only get devices for THIS business's cards
+        // Chain: user_id (business) -> card_templates -> issued_cards -> pass_devices
+        // =========================================================================
 
-        // If test audience, we could filter by a test flag
-        // For now, 'test' sends to all (in production, add a test_device column)
-        if (targetAudience === 'test') {
-            // Future: .eq('is_test_device', true)
-            console.log('📱 Target audience: TEST GROUP (sending to all for now)');
-        } else {
-            console.log('📱 Target audience: ALL USERS');
+        // Step 1: Get all card_template IDs belonging to this business
+        const { data: templates, error: templatesError } = await serviceSupabase
+            .from('card_templates')
+            .select('id')
+            .eq('user_id', userId);
+
+        if (templatesError) {
+            console.error('Failed to fetch templates:', templatesError);
+            results.errors.push('Database error fetching templates');
+            return results;
         }
 
-        const { data: devices, error: devicesError } = await query;
+        if (!templates || templates.length === 0) {
+            console.log('📭 No card templates found for this business');
+            return results;
+        }
+
+        const templateIds = templates.map(t => t.id);
+        console.log(`📋 Found ${templateIds.length} card template(s) for this business`);
+
+        // Step 2: Get all issued_cards UUIDs for these templates
+        const { data: issuedCards, error: cardsError } = await serviceSupabase
+            .from('issued_cards')
+            .select('uuid')
+            .in('card_template_id', templateIds);
+
+        if (cardsError) {
+            console.error('Failed to fetch issued cards:', cardsError);
+            results.errors.push('Database error fetching issued cards');
+            return results;
+        }
+
+        if (!issuedCards || issuedCards.length === 0) {
+            console.log('📭 No issued cards found for this business');
+            return results;
+        }
+
+        const cardUuids = issuedCards.map(c => c.uuid);
+        console.log(`� Found ${cardUuids.length} issued card(s) for this business`);
+
+        // Step 3: Get push tokens for devices registered to THESE cards only
+        // pass_devices.serial_number = issued_cards.uuid
+        const { data: devices, error: devicesError } = await serviceSupabase
+            .from('pass_devices')
+            .select('push_token')
+            .in('serial_number', cardUuids)
+            .not('push_token', 'is', null);
 
         if (devicesError) {
             console.error('Failed to fetch devices:', devicesError);
@@ -86,13 +122,20 @@ async function sendPushNotifications(serviceSupabase, title, body, targetAudienc
         }
 
         if (!devices || devices.length === 0) {
-            console.log('📭 No registered devices found');
+            console.log('📭 No registered devices found for this business');
             return results;
         }
 
         // Get unique push tokens
         const tokens = [...new Set(devices.map(d => d.push_token).filter(Boolean))];
-        console.log(`📱 Found ${tokens.length} unique device tokens`);
+        console.log(`📱 Found ${tokens.length} unique device token(s) for this business`);
+
+        // Log target audience
+        if (targetAudience === 'test') {
+            console.log('📱 Target audience: TEST GROUP (sending to all business devices for now)');
+        } else {
+            console.log('📱 Target audience: ALL CLIENTS of this business');
+        }
 
         if (tokens.length === 0) {
             return results;
@@ -257,6 +300,7 @@ module.exports = async (req, res) => {
 
         const pushResults = await sendPushNotifications(
             serviceSupabase,
+            userId,  // Pass userId for multi-tenant filtering
             sanitizedTitle,
             sanitizedBody,
             targetValue
