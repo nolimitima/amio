@@ -7,6 +7,7 @@ import { supabase } from '../supabaseClient';
 import Settings from './Settings.jsx';
 import ScanLogsList from '../components/ScanLogsList.jsx';
 import RegistrationLinks from './RegistrationLinks.jsx';
+import DashboardNotifications from '../components/DashboardNotifications.jsx';
 
 const tabs = [
   'Лицевая сторона',
@@ -511,6 +512,15 @@ const Dashboard = () => {
               >
                 Регистрация
               </button>
+              <button
+                onClick={() => setActiveTab('notifications')}
+                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'notifications'
+                  ? 'bg-[#D1E889] text-[#121E1D]'
+                  : 'text-[#121E1D] hover:bg-[#D1E889]/20'
+                  }`}
+              >
+                Рассылки
+              </button>
             </nav>
           </div>
         </div>
@@ -602,6 +612,11 @@ const Dashboard = () => {
           {activeTab === 'registration' && (
             <div className="bg-white rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-neutral-200">
               <RegistrationLinks />
+            </div>
+          )}
+          {activeTab === 'notifications' && (
+            <div className="bg-white rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-neutral-200">
+              <DashboardNotifications />
             </div>
           )}
           {activeTab === 'create' && (
