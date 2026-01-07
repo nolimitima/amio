@@ -251,22 +251,28 @@ module.exports = async (req, res) => {
           { key: "holder", label: "Гость", value: issued.guest_name || "Клиент" }
         ],
 
-        // auxiliary — Бонус + Promo message (with changeMessage for notifications)
+        // auxiliary — Бонус + Promo (only if show_on_card is true)
         auxiliaryFields: [
           { key: "bonus", label: "Бонус", value: `${Number(tpl.bonus_percent_field || 0)}%` },
-          // Promo field - ONLY show on card if promo_show_on_card is true
-          // The promo_message is always set for changeMessage notification to work
-          // But we only display it on the card when flag is true
+          // Show promo on FRONT of card only when flag is true
           ...(issued.promo_message && issued.promo_show_on_card ? [{
             key: "promo",
             label: "Акция",
             value: issued.promo_message,
-            changeMessage: "%@"  // Clean message - business writes their own text
+            changeMessage: "%@"
           }] : [])
         ],
 
-        // Оборотка — бизнес-инфа
+        // Оборотка — бизнес-инфа + hidden promo for notification-only mode
         backFields: [
+          // Hidden promo field for notification-only mode (changeMessage still works)
+          // This is on the BACK of the card so users don't see it prominently
+          ...(issued.promo_message && !issued.promo_show_on_card ? [{
+            key: "promo",
+            label: "Уведомление",
+            value: issued.promo_message,
+            changeMessage: "%@"  // This triggers the notification banner!
+          }] : []),
           ...(tpl.description ? [{ key: "desc", label: "Описание", value: tpl.description }] : []),
           ...(tpl.website_url ? [{ key: "site", label: "Сайт", value: tpl.website_url }] : []),
           ...(tpl.contact_email ? [{ key: "email", label: "Email", value: tpl.contact_email }] : []),
