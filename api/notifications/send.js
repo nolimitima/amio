@@ -119,34 +119,38 @@ async function sendPushNotifications(serviceSupabase, userId, title, body, targe
 
         // =========================================================================
         // CRITICAL: Update issued_cards with promo message + timestamp
-        // Only if show_on_card is enabled
+        // We ALWAYS set promo_message because it's needed for changeMessage banner
+        // But we use 'promo_persistent' flag to know if it should stay on card
         // =========================================================================
-        if (showOnCard) {
-            const { error: updateError } = await serviceSupabase
-                .from('issued_cards')
-                .update({
-                    updated_at: new Date().toISOString(),
-                    promo_message: body,  // Store the marketing message
-                    promo_updated_at: new Date().toISOString()
-                })
-                .in('uuid', cardUuids);
+        const { error: updateError } = await serviceSupabase
+            .from('issued_cards')
+            .update({
+                updated_at: new Date().toISOString(),
+                promo_message: body,  // Always set for changeMessage notification banner
+                promo_updated_at: new Date().toISOString()
+            })
+            .in('uuid', cardUuids);
 
-            if (updateError) {
-                console.error('Failed to update issued_cards:', updateError);
-            } else {
-                console.log(`📅 Updated ${cardUuids.length} card(s) with promo message`);
-            }
+        if (updateError) {
+            console.error('Failed to update issued_cards:', updateError);
         } else {
-            // Just update the timestamp to trigger notification (no promo on card)
-            const { error: updateError } = await serviceSupabase
-                .from('issued_cards')
-                .update({ updated_at: new Date().toISOString() })
-                .in('uuid', cardUuids);
-
-            if (updateError) {
-                console.error('Failed to update issued_cards:', updateError);
+            if (showOnCard) {
+                console.log(`📅 Updated ${cardUuids.length} card(s) with PERSISTENT promo`);
             } else {
-                console.log(`📅 Updated ${cardUuids.length} card(s) timestamp (notification only)`);
+                console.log(`📅 Updated ${cardUuids.length} card(s) with notification-only promo`);
+                // Schedule cleanup: Clear promo after push is sent (it's only for notification)
+                // The promo will show briefly when card updates, then be cleared
+                setTimeout(async () => {
+                    try {
+                        await serviceSupabase
+                            .from('issued_cards')
+                            .update({ promo_message: null, promo_updated_at: null })
+                            .in('uuid', cardUuids);
+                        console.log(`🧹 Cleared notification-only promo from ${cardUuids.length} cards`);
+                    } catch (e) {
+                        console.error('Failed to clear temp promo:', e);
+                    }
+                }, 10000); // Clear after 10 seconds
             }
         }
 

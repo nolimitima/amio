@@ -305,18 +305,29 @@ module.exports = async (req, res) => {
       {}
     );
 
-    // ---------- Assets (required icon) ----------
+    // ---------- Assets ----------
     const assetsDir = path.join(process.cwd(), "backend", "pass-assets");
-    for (const name of ["icon.png", "icon@2x.png"]) {
-      const p = path.join(assetsDir, name);
-      if (fs.existsSync(p)) pass.addBuffer(name, fs.readFileSync(p));
+
+    // Fetch business logo first (used for both logo.png AND icon.png for notifications)
+    const logoBuf = await fetchBuffer(tpl.logo_url);
+
+    // Icon - use business logo if available (shows in notifications)
+    // The icon.png is what Apple uses for notification thumbnails
+    if (logoBuf) {
+      pass.addBuffer("icon.png", logoBuf);
+      pass.addBuffer("icon@2x.png", logoBuf);
+    } else {
+      // Fallback to static icons
+      for (const name of ["icon.png", "icon@2x.png"]) {
+        const p = path.join(assetsDir, name);
+        if (fs.existsSync(p)) pass.addBuffer(name, fs.readFileSync(p));
+      }
     }
 
-    // Optional assets from template
-    const logoBuf = await fetchBuffer(tpl.logo_url);
+    // Logo (shows next to logoText on the pass)
     if (logoBuf) pass.addBuffer("logo.png", logoBuf);
 
-    // Cover → как фон, без текста поверх
+    // Cover → strip (background behind fields)
     const coverBuf = await fetchBuffer(tpl.cover_url);
     if (coverBuf) pass.addBuffer("strip.png", coverBuf);
 
