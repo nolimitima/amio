@@ -22,7 +22,7 @@ function sanitizeInput(text) {
 }
 
 // Send push notifications to devices belonging to THIS business only
-async function sendPushNotifications(serviceSupabase, userId, title, body, targetAudience) {
+async function sendPushNotifications(serviceSupabase, userId, title, body, targetAudience, showOnCard = false) {
     const results = {
         sent: 0,
         failed: 0,
@@ -119,24 +119,35 @@ async function sendPushNotifications(serviceSupabase, userId, title, body, targe
 
         // =========================================================================
         // CRITICAL: Update issued_cards with promo message + timestamp
-        // 1. updated_at → So PassKit sees there's an update
-        // 2. promo_message → The marketing message to show on the card
-        // 3. promo_updated_at → Triggers changeMessage notification banner
+        // Only if show_on_card is enabled
         // =========================================================================
-        const { error: updateError } = await serviceSupabase
-            .from('issued_cards')
-            .update({
-                updated_at: new Date().toISOString(),
-                promo_message: body,  // Store the marketing message
-                promo_updated_at: new Date().toISOString()
-            })
-            .in('uuid', cardUuids);
+        if (showOnCard) {
+            const { error: updateError } = await serviceSupabase
+                .from('issued_cards')
+                .update({
+                    updated_at: new Date().toISOString(),
+                    promo_message: body,  // Store the marketing message
+                    promo_updated_at: new Date().toISOString()
+                })
+                .in('uuid', cardUuids);
 
-        if (updateError) {
-            console.error('Failed to update issued_cards:', updateError);
-            // Continue anyway - push might still work
+            if (updateError) {
+                console.error('Failed to update issued_cards:', updateError);
+            } else {
+                console.log(`📅 Updated ${cardUuids.length} card(s) with promo message`);
+            }
         } else {
-            console.log(`📅 Updated ${cardUuids.length} card(s) with promo message`);
+            // Just update the timestamp to trigger notification (no promo on card)
+            const { error: updateError } = await serviceSupabase
+                .from('issued_cards')
+                .update({ updated_at: new Date().toISOString() })
+                .in('uuid', cardUuids);
+
+            if (updateError) {
+                console.error('Failed to update issued_cards:', updateError);
+            } else {
+                console.log(`📅 Updated ${cardUuids.length} card(s) timestamp (notification only)`);
+            }
         }
 
         // Use shared APNs provider from lib/apn.js
@@ -229,7 +240,8 @@ module.exports = async (req, res) => {
         // =========================================================================
         // 2. INPUT VALIDATION
         // =========================================================================
-        const { title, body, target_audience } = req.body || {};
+        const { title, body, target_audience, show_on_card } = req.body || {};
+        const showOnCard = show_on_card === true;
 
         // Validate and sanitize title
         const sanitizedTitle = sanitizeInput(title);
@@ -267,6 +279,7 @@ module.exports = async (req, res) => {
                 body: sanitizedBody,
                 status: 'sent',
                 target_audience: targetValue,
+                show_on_card: showOnCard,
                 sent_by: userId
             }])
             .select()
@@ -288,10 +301,11 @@ module.exports = async (req, res) => {
 
         const pushResults = await sendPushNotifications(
             serviceSupabase,
-            userId,  // Pass userId for multi-tenant filtering
+            userId,
             sanitizedTitle,
             sanitizedBody,
-            targetValue
+            targetValue,
+            showOnCard
         );
 
         console.log('Push results:', pushResults);

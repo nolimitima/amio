@@ -20,6 +20,7 @@ const DashboardNotifications = () => {
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
     const [targetAudience, setTargetAudience] = useState('all');
+    const [showOnCard, setShowOnCard] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
     const [error, setError] = useState(null);
@@ -27,28 +28,29 @@ const DashboardNotifications = () => {
     // History state
     const [campaigns, setCampaigns] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(true);
+    const [deletingId, setDeletingId] = useState(null);
 
     // Textarea ref for auto-resize
     const textareaRef = useRef(null);
 
     // Fetch campaigns history
+    const fetchCampaigns = async () => {
+        setHistoryLoading(true);
+        const { data, error } = await supabase
+            .from('marketing_campaigns')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (error) {
+            console.error('Error fetching campaigns:', error);
+        } else {
+            setCampaigns(data || []);
+        }
+        setHistoryLoading(false);
+    };
+
     useEffect(() => {
-        const fetchCampaigns = async () => {
-            setHistoryLoading(true);
-            const { data, error } = await supabase
-                .from('marketing_campaigns')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(20);
-
-            if (error) {
-                console.error('Error fetching campaigns:', error);
-            } else {
-                setCampaigns(data || []);
-            }
-            setHistoryLoading(false);
-        };
-
         fetchCampaigns();
     }, []);
 
@@ -103,7 +105,8 @@ const DashboardNotifications = () => {
                 body: JSON.stringify({
                     title: trimmedTitle,
                     body: trimmedBody,
-                    target_audience: targetAudience
+                    target_audience: targetAudience,
+                    show_on_card: showOnCard
                 })
             });
 
@@ -118,21 +121,56 @@ const DashboardNotifications = () => {
             setTitle('');
             setBody('');
             setTargetAudience('all');
+            setShowOnCard(false);
 
             // Refresh history
-            const { data: newCampaigns } = await supabase
-                .from('marketing_campaigns')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(20);
-
-            setCampaigns(newCampaigns || []);
+            await fetchCampaigns();
 
         } catch (err) {
             console.error('Send error:', err);
             setError(err.message || 'Произошла ошибка');
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Handle removing promo from cards
+    const handleRemovePromo = async (campaignId) => {
+        if (!confirm('Удалить рассылку с карт клиентов?')) return;
+
+        setDeletingId(campaignId);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (!session?.access_token) {
+                setError('Ошибка авторизации');
+                return;
+            }
+
+            const response = await fetch('/api/notifications/remove', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ campaign_id: campaignId })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Ошибка удаления');
+            }
+
+            // Refresh history
+            await fetchCampaigns();
+            setMessage('Рассылка удалена с карт');
+
+        } catch (err) {
+            console.error('Remove error:', err);
+            setError(err.message || 'Не удалось удалить');
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -235,6 +273,34 @@ const DashboardNotifications = () => {
                                 </select>
                             </div>
 
+                            {/* Show on Card Toggle */}
+                            <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl">
+                                <div className="flex-1 min-w-0 mr-4">
+                                    <div className="text-sm font-medium text-gray-900">
+                                        Показать на карте
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-0.5">
+                                        Добавить акцию в бонусную карту клиента
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowOnCard(!showOnCard)}
+                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full 
+                              border-2 border-transparent transition-colors duration-200 ease-in-out 
+                              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                              ${showOnCard ? 'bg-blue-600' : 'bg-gray-200'}`}
+                                    role="switch"
+                                    aria-checked={showOnCard}
+                                >
+                                    <span
+                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full 
+                                bg-white shadow ring-0 transition duration-200 ease-in-out
+                                ${showOnCard ? 'translate-x-5' : 'translate-x-0'}`}
+                                    />
+                                </button>
+                            </div>
+
                             {/* Error/Success Messages */}
                             {error && (
                                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
@@ -323,22 +389,54 @@ const DashboardNotifications = () => {
                                             {sanitizeText(campaign.body)}
                                         </div>
 
-                                        {/* Footer: Status + Target */}
-                                        <div className="flex items-center gap-2">
-                                            {/* Status Badge */}
-                                            <span
-                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${campaign.status === 'sent'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-gray-100 text-gray-600'
-                                                    }`}
-                                            >
-                                                {campaign.status === 'sent' ? 'Отправлено' : 'Черновик'}
-                                            </span>
+                                        {/* Footer: Status + Target + Actions */}
+                                        <div className="flex items-center justify-between flex-wrap gap-2">
+                                            <div className="flex items-center gap-2">
+                                                {/* Status Badge */}
+                                                <span
+                                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${campaign.status === 'sent'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-gray-100 text-gray-600'
+                                                        }`}
+                                                >
+                                                    {campaign.status === 'sent' ? 'Отправлено' : 'Черновик'}
+                                                </span>
 
-                                            {/* Target Badge */}
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                                                {campaign.target_audience === 'all' ? 'Все' : 'Тест'}
-                                            </span>
+                                                {/* Target Badge */}
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                                                    {campaign.target_audience === 'all' ? 'Все' : 'Тест'}
+                                                </span>
+
+                                                {/* On Card Badge */}
+                                                {campaign.show_on_card && (
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700">
+                                                        На карте
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Remove from Card Button */}
+                                            {campaign.show_on_card && (
+                                                <button
+                                                    onClick={() => handleRemovePromo(campaign.id)}
+                                                    disabled={deletingId === campaign.id}
+                                                    className="text-xs text-red-600 hover:text-red-800 font-medium 
+                                     disabled:opacity-50 disabled:cursor-not-allowed
+                                     flex items-center gap-1 transition-colors"
+                                                >
+                                                    {deletingId === campaign.id ? (
+                                                        'Удаление...'
+                                                    ) : (
+                                                        <>
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                            Убрать с карт
+                                                        </>
+                                                    )}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
