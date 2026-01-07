@@ -162,7 +162,7 @@ module.exports = async (req, res) => {
 
     const { data: issued, error: e1 } = await supa
       .from("issued_cards")
-      .select("uuid, guest_name, email, phone, balance, qr_value, card_template_id, auth_token, promo_message")
+      .select("uuid, guest_name, email, phone, balance, qr_value, card_template_id, auth_token, promo_message, promo_show_on_card")
       .eq("uuid", uuid)
       .single();
     if (e1 || !issued) return res.status(404).json({ error: "Card not found" });
@@ -254,8 +254,10 @@ module.exports = async (req, res) => {
         // auxiliary — Бонус + Promo message (with changeMessage for notifications)
         auxiliaryFields: [
           { key: "bonus", label: "Бонус", value: `${Number(tpl.bonus_percent_field || 0)}%` },
-          // Promo field with changeMessage - triggers notification banner when updated
-          ...(issued.promo_message ? [{
+          // Promo field - ONLY show on card if promo_show_on_card is true
+          // The promo_message is always set for changeMessage notification to work
+          // But we only display it on the card when flag is true
+          ...(issued.promo_message && issued.promo_show_on_card ? [{
             key: "promo",
             label: "Акция",
             value: issued.promo_message,

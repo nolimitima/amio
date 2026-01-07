@@ -11,3 +11,7 @@ ADD COLUMN IF NOT EXISTS promo_message TEXT DEFAULT NULL;
 -- Add promo_updated_at to track when promo changed (for banner display)
 ALTER TABLE public.issued_cards 
 ADD COLUMN IF NOT EXISTS promo_updated_at TIMESTAMPTZ DEFAULT NULL;
+
+-- Add promo_show_on_card to control if promo appears on card (vs notification only)
+ALTER TABLE public.issued_cards 
+ADD COLUMN IF NOT EXISTS promo_show_on_card BOOLEAN DEFAULT false;

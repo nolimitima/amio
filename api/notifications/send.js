@@ -120,14 +120,15 @@ async function sendPushNotifications(serviceSupabase, userId, title, body, targe
         // =========================================================================
         // CRITICAL: Update issued_cards with promo message + timestamp
         // We ALWAYS set promo_message because it's needed for changeMessage banner
-        // But we use 'promo_persistent' flag to know if it should stay on card
+        // But we use 'promo_show_on_card' flag to control if it displays on the card
         // =========================================================================
         const { error: updateError } = await serviceSupabase
             .from('issued_cards')
             .update({
                 updated_at: new Date().toISOString(),
                 promo_message: body,  // Always set for changeMessage notification banner
-                promo_updated_at: new Date().toISOString()
+                promo_updated_at: new Date().toISOString(),
+                promo_show_on_card: showOnCard  // Controls visibility on card
             })
             .in('uuid', cardUuids);
 
@@ -135,22 +136,9 @@ async function sendPushNotifications(serviceSupabase, userId, title, body, targe
             console.error('Failed to update issued_cards:', updateError);
         } else {
             if (showOnCard) {
-                console.log(`📅 Updated ${cardUuids.length} card(s) with PERSISTENT promo`);
+                console.log(`📅 Updated ${cardUuids.length} card(s) with VISIBLE promo`);
             } else {
-                console.log(`📅 Updated ${cardUuids.length} card(s) with notification-only promo`);
-                // Schedule cleanup: Clear promo after push is sent (it's only for notification)
-                // The promo will show briefly when card updates, then be cleared
-                setTimeout(async () => {
-                    try {
-                        await serviceSupabase
-                            .from('issued_cards')
-                            .update({ promo_message: null, promo_updated_at: null })
-                            .in('uuid', cardUuids);
-                        console.log(`🧹 Cleared notification-only promo from ${cardUuids.length} cards`);
-                    } catch (e) {
-                        console.error('Failed to clear temp promo:', e);
-                    }
-                }, 10000); // Clear after 10 seconds
+                console.log(`📅 Updated ${cardUuids.length} card(s) - notification only (hidden on card)`);
             }
         }
 
