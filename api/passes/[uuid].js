@@ -220,7 +220,8 @@ module.exports = async (req, res) => {
       formatVersion: 1,
       passTypeIdentifier: PASS_TYPE_IDENTIFIER,
       teamIdentifier: TEAM_IDENTIFIER,
-      organizationName: ORG_NAME,
+      // Use business name for notifications (shows as title in push notifications)
+      organizationName: tpl.user_facing_name || ORG_NAME,
       description: tpl.user_facing_name || "Digital Card",
       serialNumber: uuid,
 
@@ -258,7 +259,7 @@ module.exports = async (req, res) => {
             key: "promo",
             label: "Акция",
             value: issued.promo_message,
-            changeMessage: "📢 %@"  // %@ will be replaced with the new value
+            changeMessage: "%@"  // Clean message - business writes their own text
           }] : [])
         ],
 
