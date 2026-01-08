@@ -234,7 +234,7 @@ export default function RegistrationLinks() {
               alt="Apple Wallet"
               style={{ width: '32px', height: '32px', display: 'block' }}
             />
-            <span style={{ fontSize: '16px', fontWeight: '500', lineHeight: '32px' }}>Apple Wallet</span>
+            <span style={{ fontSize: '16px', fontWeight: '500' }}>Apple Wallet</span>
           </div>
         </div>
       )}
