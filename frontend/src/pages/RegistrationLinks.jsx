@@ -222,19 +222,21 @@ export default function RegistrationLinks() {
           <div style={{
             backgroundColor: '#000000',
             color: '#ffffff',
-            padding: '12px 24px',
+            padding: '12px 32px',
             borderRadius: '8px',
             fontSize: '14px',
             fontWeight: '500',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            justifyContent: 'center',
+            gap: '10px'
           }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-              <rect x="3" y="6" width="18" height="12" rx="2" stroke="white" strokeWidth="2" />
-              <path d="M3 10H21" stroke="white" strokeWidth="2" />
-            </svg>
-            Add to Apple Wallet
+            <img
+              src="/apple-wallet-logo.png"
+              alt="Apple Wallet"
+              style={{ width: '28px', height: '28px', flexShrink: 0 }}
+            />
+            Apple Wallet
           </div>
         </div>
       )}
