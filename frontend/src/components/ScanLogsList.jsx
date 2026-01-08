@@ -5,11 +5,13 @@ import { supabase } from '../supabaseClient';
 const PAGE_SIZE = 20;
 
 // Russian labels for action types
+// Note: transactions table uses 'accrue' and 'redeem'
 const ACTION_LABELS = {
-  scan: 'Сканирование',
-  redeem: 'Списание',
-  add_bonus: 'Начисление',
   accrue: 'Начисление',
+  redeem: 'Списание',
+  // Legacy mappings for scan_logs table (if used)
+  scan: 'Сканирование',
+  add_bonus: 'Начисление',
 };
 
 export default function ScanLogsList() {
@@ -81,9 +83,8 @@ export default function ScanLogsList() {
           onChange={(e) => setActionFilter(e.target.value)}
         >
           <option value="">Все действия</option>
-          <option value="scan">Сканирование</option>
+          <option value="accrue">Начисление</option>
           <option value="redeem">Списание</option>
-          <option value="add_bonus">Начисление</option>
         </select>
         <input
           type="date"

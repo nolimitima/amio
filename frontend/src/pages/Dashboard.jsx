@@ -8,6 +8,7 @@ import Settings from './Settings.jsx';
 import ScanLogsList from '../components/ScanLogsList.jsx';
 import RegistrationLinks from './RegistrationLinks.jsx';
 import DashboardNotifications from '../components/DashboardNotifications.jsx';
+import AnalyticsOverview from '../components/AnalyticsOverview.jsx';
 
 const tabs = [
   'Лицевая сторона',
@@ -25,7 +26,7 @@ const DEFAULT_LABELS = [];
 
 const Dashboard = () => {
   const [cards, setCards] = useState([]);
-  const [activeTab, setActiveTab] = useState('cards');
+  const [activeTab, setActiveTab] = useState('analytics');
   const [createTab, setCreateTab] = useState(0);
   // --- Новый стейт для создания карты ---
   // Front
@@ -468,6 +469,15 @@ const Dashboard = () => {
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-white/50">
             <nav className="flex flex-col gap-2">
               <button
+                onClick={() => setActiveTab('analytics')}
+                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'analytics'
+                  ? 'bg-[#D1E889] text-[#121E1D]'
+                  : 'text-[#121E1D] hover:bg-[#D1E889]/20'
+                  }`}
+              >
+                Обзор
+              </button>
+              <button
                 onClick={() => setActiveTab('cards')}
                 className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'cards'
                   ? 'bg-[#D1E889] text-[#121E1D]'
@@ -527,6 +537,11 @@ const Dashboard = () => {
 
         {/* MAIN CONTENT */}
         <div className="flex-1">
+          {activeTab === 'analytics' && (
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-white/50">
+              <AnalyticsOverview />
+            </div>
+          )}
           {activeTab === 'cards' && (
             <>
               {/* Welcome Section */}
