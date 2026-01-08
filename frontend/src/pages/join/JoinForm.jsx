@@ -77,13 +77,13 @@ export default function JoinForm() {
       <form
         onSubmit={submit}
         noValidate
-        className="bg-white/95 p-8 rounded-2xl shadow-xl space-y-5 max-w-md mx-auto backdrop-blur-sm"
+        className="bg-white p-8 rounded-2xl shadow-xl space-y-5 max-w-md mx-auto"
       >
         <input
           type="text"
           name="full_name"
           placeholder="Например: Тимур"
-          className="w-full h-12 px-3 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-black/10 outline-none"
+          className="w-full h-12 px-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-black/10 outline-none [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:text-gray-900 [&:-webkit-autofill]:shadow-[0_0_0px_1000px_white_inset]"
           value={form.full_name}
           onChange={onChange}
         />
@@ -92,7 +92,7 @@ export default function JoinForm() {
           type="tel"
           name="phone"
           placeholder="+7 7xx xxx-xx-xx или 8XXXXXXXXXX"
-          className="w-full h-12 px-3 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-black/10 outline-none"
+          className="w-full h-12 px-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-black/10 outline-none [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:text-gray-900 [&:-webkit-autofill]:shadow-[0_0_0px_1000px_white_inset]"
           value={form.phone}
           onChange={onPhoneChange}
         />
@@ -101,7 +101,7 @@ export default function JoinForm() {
           type="email"
           name="email"
           placeholder="name@example.com (необязательно)"
-          className="w-full h-12 px-3 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-black/10 outline-none"
+          className="w-full h-12 px-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-black/10 outline-none [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:text-gray-900 [&:-webkit-autofill]:shadow-[0_0_0px_1000px_white_inset]"
           value={form.email}
           onChange={onChange}
         />

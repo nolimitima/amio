@@ -24,21 +24,6 @@ export default function BrandLayout({ children, branding }) {
 
       {/* MAIN */}
       <main className="flex-1 w-full max-w-2xl mx-auto px-5 py-10">{children}</main>
-
-      {/* FOOTER: всегда #121e1d, по центру, только "made in Amian" со ссылкой на / */}
-      <footer className="w-full" style={{ background: "#121e1d" }}>
-        <div className="max-w-2xl mx-auto px-5 py-5 flex items-center justify-center">
-          <a
-            href="/"
-            className="text-xs text-white/70 hover:text-white transition inline-flex items-center gap-1"
-            style={{ letterSpacing: ".02em" }}
-            aria-label="Made in Amian – go to home"
-          >
-            <span>сделано в</span>
-            <span className="font-medium underline underline-offset-4">Amian</span>
-          </a>
-        </div>
-      </footer>
     </div>
   );
 }
