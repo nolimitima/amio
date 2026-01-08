@@ -224,20 +224,17 @@ export default function RegistrationLinks() {
             color: '#ffffff',
             padding: '14px 32px',
             borderRadius: '8px',
-            fontSize: '16px',
-            fontWeight: '500',
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '12px',
-            lineHeight: '1'
+            gap: '12px'
           }}>
             <img
               src="/apple-wallet-logo.png"
               alt="Apple Wallet"
-              style={{ width: '32px', height: '32px', flexShrink: 0, verticalAlign: 'middle' }}
+              style={{ width: '32px', height: '32px', display: 'block' }}
             />
-            <span style={{ verticalAlign: 'middle' }}>Apple Wallet</span>
+            <span style={{ fontSize: '16px', fontWeight: '500', lineHeight: '32px' }}>Apple Wallet</span>
           </div>
         </div>
       )}
