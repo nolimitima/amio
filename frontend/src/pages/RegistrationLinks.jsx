@@ -222,9 +222,10 @@ export default function RegistrationLinks() {
           <div style={{
             backgroundColor: '#000000',
             color: '#ffffff',
-            padding: '16px 32px',
+            padding: '12px 20px',
             borderRadius: '8px',
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            display: 'inline-block'
           }}>
             <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>
               <img
