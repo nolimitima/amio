@@ -222,11 +222,11 @@ export default function RegistrationLinks() {
           <div style={{
             backgroundColor: '#000000',
             color: '#ffffff',
-            padding: '14px 32px',
+            padding: '16px 24px',
             borderRadius: '8px',
             height: '32px',
             position: 'relative',
-            width: '180px'
+            width: '200px'
           }}>
             <img
               src="/apple-wallet-logo.png"
@@ -235,8 +235,8 @@ export default function RegistrationLinks() {
                 width: '32px',
                 height: '32px',
                 position: 'absolute',
-                left: '20px',
-                top: '14px'
+                left: '24px',
+                top: '16px'
               }}
             />
             <span style={{
@@ -244,9 +244,8 @@ export default function RegistrationLinks() {
               fontWeight: '500',
               whiteSpace: 'nowrap',
               position: 'absolute',
-              left: '64px',
-              top: '50%',
-              transform: 'translateY(-50%)',
+              left: '68px',
+              top: '22px',
               lineHeight: '1'
             }}>Apple Wallet</span>
           </div>
