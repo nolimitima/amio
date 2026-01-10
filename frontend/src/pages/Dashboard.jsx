@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import headerLogo from '../assets/logo-white.png';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -9,6 +9,8 @@ import ScanLogsList from '../components/ScanLogsList.jsx';
 import RegistrationLinks from './RegistrationLinks.jsx';
 import DashboardNotifications from '../components/DashboardNotifications.jsx';
 import AnalyticsOverview from '../components/AnalyticsOverview.jsx';
+import PricingGate from '../components/PricingGate.jsx';
+import { SUBSCRIPTION_STATUS } from '../config.js';
 
 const tabs = [
   'Лицевая сторона',
@@ -73,6 +75,10 @@ const Dashboard = () => {
   // --- Placeholder user data ---
   const [placeholderUser, setPlaceholderUser] = useState({});
 
+  // --- Subscription Status (Security Guard) ---
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
   const logoInput = useRef();
   const bgInput = useRef();
 
@@ -81,13 +87,68 @@ const Dashboard = () => {
 
   console.log('Dashboard render, activeTab:', activeTab);
 
-  // Отладочная информация
+  // --- Fetch subscription status on mount ---
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!currentUser) return;
+      setProfileLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', currentUser.id)
+          .single();
 
-  // Protection against null - show loading until user is ready
-  if (!currentUser) {
+        if (error) {
+          console.error('Error fetching profile:', error);
+          // If no profile exists, treat as pending (new user)
+          setSubscriptionStatus(SUBSCRIPTION_STATUS.PENDING);
+        } else {
+          setSubscriptionStatus(data?.subscription_status || SUBSCRIPTION_STATUS.PENDING);
+        }
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+        setSubscriptionStatus(SUBSCRIPTION_STATUS.PENDING);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [currentUser]);
+
+  // Protection against null - show loading until user AND profile is ready
+  if (!currentUser || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-neutral-700">
-        Загрузка...
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[#D1E889] border-t-transparent rounded-full animate-spin"></div>
+          <span>Загрузка...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Subscription Status Security Guard ---
+  const isAllowed = [SUBSCRIPTION_STATUS.ACTIVE, SUBSCRIPTION_STATUS.TRIAL].includes(subscriptionStatus);
+  const isLocked = [SUBSCRIPTION_STATUS.PENDING, SUBSCRIPTION_STATUS.EXPIRED].includes(subscriptionStatus);
+  const isBanned = subscriptionStatus === SUBSCRIPTION_STATUS.BANNED;
+
+  // Show PricingGate for locked users
+  if (isLocked) {
+    return <PricingGate isExpired={subscriptionStatus === SUBSCRIPTION_STATUS.EXPIRED} />;
+  }
+
+  // Show Access Denied for banned users
+  if (isBanned) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F1EFED]">
+        <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md">
+          <div className="text-6xl mb-4">🚫</div>
+          <h1 className="text-2xl font-light text-[#121E1D] mb-2">Доступ запрещён</h1>
+          <p className="text-neutral-600 font-light">
+            Ваш аккаунт заблокирован. Пожалуйста, свяжитесь с поддержкой для разъяснений.
+          </p>
+        </div>
       </div>
     );
   }
