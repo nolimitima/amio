@@ -469,15 +469,6 @@ const Dashboard = () => {
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-white/50">
             <nav className="flex flex-col gap-2">
               <button
-                onClick={() => setActiveTab('analytics')}
-                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'analytics'
-                  ? 'bg-[#D1E889] text-[#121E1D]'
-                  : 'text-[#121E1D] hover:bg-[#D1E889]/20'
-                  }`}
-              >
-                Обзор
-              </button>
-              <button
                 onClick={() => setActiveTab('cards')}
                 className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'cards'
                   ? 'bg-[#D1E889] text-[#121E1D]'
@@ -487,13 +478,13 @@ const Dashboard = () => {
                 Карты
               </button>
               <button
-                onClick={() => setActiveTab('create')}
-                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'create'
+                onClick={() => setActiveTab('analytics')}
+                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'analytics'
                   ? 'bg-[#D1E889] text-[#121E1D]'
                   : 'text-[#121E1D] hover:bg-[#D1E889]/20'
                   }`}
               >
-                Создать карту
+                Обзор
               </button>
               <button
                 onClick={() => setActiveTab('scans')}
@@ -503,15 +494,6 @@ const Dashboard = () => {
                   }`}
               >
                 Сканы
-              </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'settings'
-                  ? 'bg-[#D1E889] text-[#121E1D]'
-                  : 'text-[#121E1D] hover:bg-[#D1E889]/20'
-                  }`}
-              >
-                Настройки
               </button>
               <button
                 onClick={() => setActiveTab('registration')}
@@ -530,6 +512,24 @@ const Dashboard = () => {
                   }`}
               >
                 Рассылки
+              </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'settings'
+                  ? 'bg-[#D1E889] text-[#121E1D]'
+                  : 'text-[#121E1D] hover:bg-[#D1E889]/20'
+                  }`}
+              >
+                Настройки
+              </button>
+              <button
+                onClick={() => setActiveTab('create')}
+                className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-light text-sm sm:text-base transition-all duration-200 ${activeTab === 'create'
+                  ? 'bg-[#D1E889] text-[#121E1D]'
+                  : 'text-[#121E1D] hover:bg-[#D1E889]/20'
+                  }`}
+              >
+                Создать карту
               </button>
             </nav>
           </div>
