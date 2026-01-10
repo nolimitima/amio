@@ -219,33 +219,14 @@ export default function RegistrationLinks() {
           </div>
 
           {/* Apple Wallet Badge */}
-          <div style={{
-            backgroundColor: '#000000',
-            color: '#ffffff',
-            padding: '12px 20px',
-            borderRadius: '8px',
-            whiteSpace: 'nowrap',
-            display: 'inline-block'
-          }}>
-            <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>
-              <img
-                src="/apple-wallet-logo.png"
-                alt=""
-                style={{
-                  width: '28px',
-                  height: '28px',
-                  display: 'block'
-                }}
-              />
-            </span>
-            <span style={{
-              display: 'inline-block',
-              verticalAlign: 'middle',
-              marginLeft: '10px',
-              fontSize: '16px',
-              fontWeight: '500'
-            }}>Apple Wallet</span>
-          </div>
+          <img
+            src="/apple-wallet-badge.png"
+            alt="Apple Wallet"
+            style={{
+              width: '200px',
+              height: 'auto'
+            }}
+          />
         </div>
       )}
     </div>
