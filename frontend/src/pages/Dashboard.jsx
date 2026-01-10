@@ -116,6 +116,36 @@ const Dashboard = () => {
     fetchProfile();
   }, [currentUser]);
 
+  // --- Автообновление баланса ---
+  useEffect(() => {
+    if (!autoUpdateBalance) return;
+    const interval = setInterval(() => {
+      // Баланс будет обновляться через backend, здесь ничего не делаем
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [autoUpdateBalance]);
+
+  // --- Автоустановка guestName при загрузке currentUser ---
+  useEffect(() => {
+    if (currentUser?.name) setGuestName(currentUser.name);
+  }, [currentUser]);
+
+  // --- Загрузка списка карт с backend ---
+  useEffect(() => {
+    if (activeTab !== 'cards' || !currentUser) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('card_templates')
+        .select('*')
+        .eq('user_id', currentUser.id);
+      setCards(data || []);
+    })();
+  }, [activeTab, currentUser]);
+
+  // ==========================================
+  // CONDITIONAL RETURNS - MUST BE AFTER ALL HOOKS
+  // ==========================================
+
   // Protection against null - show loading until user AND profile is ready
   if (!currentUser || profileLoading) {
     return (
@@ -152,32 +182,6 @@ const Dashboard = () => {
       </div>
     );
   }
-
-  // --- Автообновление баланса ---
-  React.useEffect(() => {
-    if (!autoUpdateBalance) return;
-    const interval = setInterval(() => {
-      // Баланс будет обновляться через backend, здесь ничего не делаем
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [autoUpdateBalance]);
-
-  // --- Автоустановка guestName при загрузке currentUser ---
-  React.useEffect(() => {
-    if (currentUser?.name) setGuestName(currentUser.name);
-  }, [currentUser]);
-
-  // --- Загрузка списка карт с backend ---
-  React.useEffect(() => {
-    if (activeTab !== 'cards' || !currentUser) return;
-    (async () => {
-      const { data, error } = await supabase
-        .from('card_templates')
-        .select('*')
-        .eq('user_id', currentUser.id);
-      setCards(data || []);
-    })();
-  }, [activeTab, currentUser]);
 
   const handleLogout = () => {
     logout();
