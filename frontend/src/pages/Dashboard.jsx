@@ -158,17 +158,12 @@ const Dashboard = () => {
     );
   }
 
-  // --- Subscription Status Security Guard ---
+  // --- Subscription Status Flags ---
   const isAllowed = [SUBSCRIPTION_STATUS.ACTIVE, SUBSCRIPTION_STATUS.TRIAL].includes(subscriptionStatus);
   const isLocked = [SUBSCRIPTION_STATUS.PENDING, SUBSCRIPTION_STATUS.EXPIRED].includes(subscriptionStatus);
   const isBanned = subscriptionStatus === SUBSCRIPTION_STATUS.BANNED;
 
-  // Show PricingGate for locked users
-  if (isLocked) {
-    return <PricingGate isExpired={subscriptionStatus === SUBSCRIPTION_STATUS.EXPIRED} />;
-  }
-
-  // Show Access Denied for banned users
+  // Show Access Denied for banned users (full page block - only for banned)
   if (isBanned) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F1EFED]">
@@ -700,171 +695,178 @@ const Dashboard = () => {
             </div>
           )}
           {activeTab === 'create' && (
-            <form className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-white/50 flex flex-col xl:flex-row gap-6 overflow-hidden" onSubmit={handleSubmit}>
-              <div className="flex-1 min-w-0">
-                <div className="flex gap-2 mb-6">
-                  <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab === 0 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e => { e.preventDefault(); setCreateTab(0) }}>Лицевая сторона</button>
-                  <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab === 1 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e => { e.preventDefault(); setCreateTab(1) }}>Обратная сторона</button>
-                  <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab === 2 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e => { e.preventDefault(); setCreateTab(2) }}>Особенности</button>
-                </div>
-                {createTab === 0 && (
-                  <>
-                    <div className="mb-3">
-                      <label htmlFor="internalName" className="block text-xs mb-1 font-medium text-[#232323] font-light"> Внутреннее название <span className="text-red-500">*</span></label>
-                      <input id="internalName" name="internalName" required value={internalName} onChange={e => setInternalName(e.target.value)} placeholder="Внутреннее название шаблона (не видно клиенту)" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
-                      {errors.internalName && <div className="text-xs text-red-500 mt-1">{errors.internalName}</div>}
-                    </div>
-                    <div className="mb-3">
-                      <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Название, которое увидят пользователи</label>
-                      <input value={userFacingName} onChange={e => setUserFacingName(e.target.value)} placeholder="Название, которое увидит клиент в Wallet" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
-                    </div>
-                    <div className="mb-3">
-                      <label htmlFor="logoInput" className="block text-xs mb-1 font-medium text-[#232323] font-light">Загрузка логотипа</label>
-                      <input id="logoInput" name="logoInput" type="file" accept="image/*" ref={logoInput} onChange={handleLogo} className="w-full text-xs" />
-                      <div className="text-[10px] text-neutral-600 mt-1">60x45 px, PNG/SVG/JPG, отображается в левом верхнем углу</div>
-                      {logo && <div className="text-[10px] text-neutral-700 mt-1">Выбран файл: {logo.name}</div>}
-                      {errors.logo && <div className="text-xs text-red-500 mt-1">{errors.logo}</div>}
-                    </div>
-                    <div className="mb-3">
-                      <label htmlFor="bgInput" className="block text-xs mb-1 font-medium text-[#232323] font-light">Загрузка обложки</label>
-                      <input id="bgInput" name="bgInput" type="file" accept="image/*" ref={bgInput} onChange={handleBg} className="w-full text-xs" />
-                      <div className="text-[10px] text-neutral-600 mt-1">1000x648 px, заменяет цвет фона</div>
-                      {bg && <div className="text-[10px] text-neutral-700 mt-1">Выбран файл: {bg.name}</div>}
-                    </div>
-                    <div className="flex gap-4 mb-3">
-                      <div>
-                        <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Цвет фона</label>
-                        <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
-                      </div>
-                      <div>
-                        <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Цвет заголовков</label>
-                        <input type="color" value={labelColor} onChange={e => setLabelColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
-                      </div>
-                      <div>
-                        <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Цвет значений</label>
-                        <input type="color" value={valueColor} onChange={e => setValueColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
-                      </div>
-                    </div>
-                    {/* Динамические поля временно убраны */}
-                    <div className="mb-3">
-                      <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Штрихкод / QR-код</label>
-                      <div className="flex gap-2 items-center">
-                        <select value={qrType} disabled className="border rounded px-2 py-1 text-xs">
-                          <option value="qr">QR Code</option>
-                        </select>
-                        <input value={qrValue} onChange={e => setQrValue(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-xs w-40 text-gray-900 bg-white placeholder-gray-400" />
-                      </div>
-                      <div className="text-[10px] text-neutral-600 mt-1">По умолчанию: user.memberId</div>
-                    </div>
-                  </>
-                )}
-                {createTab === 1 && (
-                  <>
-                    <div className="mb-3">
-                      <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Описание</label>
-                      <textarea maxLength={500} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Описание, правила, условия..." className="w-full border border-gray-300 rounded px-2 py-1 text-sm min-h-[60px] resize-vertical text-gray-900 bg-white placeholder-gray-400" />
-                    </div>
-                    <div className="mb-3">
-                      <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Контактный email</label>
-                      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="mail@company.com" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
-                      {errors.email && <div className="text-xs text-red-500 mt-1">{errors.email}</div>}
-                    </div>
-                    <div className="mb-3">
-                      <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Телефон</label>
-                      <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+7 999 888-77-66" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
-                    </div>
-                    <div className="mb-3">
-                      <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Сайт</label>
-                      <input type="url" value={site} onChange={e => setSite(e.target.value)} placeholder="https://site.com" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
-                      {errors.site && <div className="text-xs text-red-500 mt-1">{errors.site}</div>}
-                    </div>
-                  </>
-                )}
-                {createTab === 2 && (
-                  <>
-                    <button type="button" className="mb-2 bg-[#D1E889] text-[#121E1D] rounded px-3 py-1 text-xs" onClick={() => handleAddBonus(10)}>+10 к балансу (тест)</button>
-                    <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
-                      <input type="checkbox" checked={autoUpdateBalance} onChange={e => setAutoUpdateBalance(e.target.checked)} />
-                      Автоматическое обновление баланса
-                    </label>
-                    <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
-                      <input type="checkbox" checked={expires} onChange={e => setExpires(e.target.checked)} />
-                      Срок действия карты
-                    </label>
-                    {expires && (
-                      <div className="pl-6 mb-2">
-                        <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Срок действия до:</label>
-                        <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white" />
-                      </div>
-                    )}
-                    <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
-                      <input type="checkbox" checked={notifyOnUse} onChange={e => setNotifyOnUse(e.target.checked)} />
-                      Оповещение при использовании
-                    </label>
-                    <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
-                      <input type="checkbox" checked={limitUses} onChange={e => setLimitUses(e.target.checked)} />
-                      Ограничить количество использований
-                    </label>
-                    {limitUses && (
-                      <div className="pl-6 mb-2">
-                        <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Максимум использований:</label>
-                        <input type="number" min={1} value={maxUses} onChange={e => setMaxUses(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm w-24 text-gray-900 bg-white" />
-                      </div>
-                    )}
-                  </>
-                )}
-                {/* --- Новый блок: Конструктор динамических полей (только для лицевой стороны) --- */}
-                {createTab === 0 && (
-                  <div className="mb-6 mt-4">
-                    <h2 className="text-base font-light text-black mb-2">Динамические поля</h2>
-                    <div className="mb-4">
-                      <label className="block text-[10px] font-medium text-[#232323] mb-1 flex items-center gap-2">
-                        <span role="img" aria-label="user">👤</span> Имя клиента
-                      </label>
-                      <input
-                        className="border border-gray-300 rounded px-2 py-1 w-full text-gray-900 bg-white placeholder-gray-400 text-sm"
-                        value={guestName}
-                        onChange={e => setGuestName(e.target.value)}
-                        placeholder="Например, Илон Маск"
-                      />
-                      <div className="text-[10px] text-neutral-600 mt-1">Это значение будет автоматически подставлено для каждого пользователя (user.fullName)</div>
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-[10px] font-medium text-[#232323] mb-1 flex items-center gap-2">
-                        <span role="img" aria-label="bonus">🎁</span> Бонус (%)
-                      </label>
-                      <input
-                        className="border border-gray-300 rounded px-2 py-1 w-full text-gray-900 bg-white placeholder-gray-400 text-sm"
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={bonusPercent}
-                        onChange={e => setBonusPercent(e.target.value)}
-                        placeholder="Например, 5"
-                      />
-                      <div className="text-[10px] text-neutral-600 mt-1">Это значение будет автоматически подставлено для каждого пользователя (user.bonusPercentage)</div>
-                    </div>
+            isLocked ? (
+              // Show PricingGate for pending/expired users trying to create cards
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden">
+                <PricingGate isExpired={subscriptionStatus === SUBSCRIPTION_STATUS.EXPIRED} />
+              </div>
+            ) : (
+              <form className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-8 md:p-12 shadow-lg border border-white/50 flex flex-col xl:flex-row gap-6 overflow-hidden" onSubmit={handleSubmit}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex gap-2 mb-6">
+                    <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab === 0 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e => { e.preventDefault(); setCreateTab(0) }}>Лицевая сторона</button>
+                    <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab === 1 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e => { e.preventDefault(); setCreateTab(1) }}>Обратная сторона</button>
+                    <button className={`px-4 py-2 rounded-t text-sm font-medium border-b-2 ${createTab === 2 ? 'bg-[#d1e889] text-[#121e1d] border-b-[#121e1d]' : 'bg-[#F1EFED] text-[#121e1d] border-b-transparent'}`} onClick={e => { e.preventDefault(); setCreateTab(2) }}>Особенности</button>
                   </div>
-                )}
-                {/* --- конец блока конструктора --- */}
-                <button
-                  type="submit"
-                  className="mt-6 bg-[#121e1d] text-white py-2 rounded text-sm w-full disabled:opacity-50"
-                  disabled={loading}
-                >
-                  {loading ? 'Создание...' : 'Создать карту'}
-                </button>
-                {errors.api && <div className="mt-2 text-center text-red-600 text-sm">{errors.api}</div>}
-                {msg && <div className="mt-2 text-center text-green-600 text-sm">{msg}</div>}
-              </div>
-              {/* Preview */}
-              <div className="flex-1 flex flex-col items-center">
-                <div className="flex flex-col gap-2 items-center">
-                  {cardPreview}
-                  <div className="text-xs text-neutral-600 mt-1">Предпросмотр</div>
+                  {createTab === 0 && (
+                    <>
+                      <div className="mb-3">
+                        <label htmlFor="internalName" className="block text-xs mb-1 font-medium text-[#232323] font-light"> Внутреннее название <span className="text-red-500">*</span></label>
+                        <input id="internalName" name="internalName" required value={internalName} onChange={e => setInternalName(e.target.value)} placeholder="Внутреннее название шаблона (не видно клиенту)" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
+                        {errors.internalName && <div className="text-xs text-red-500 mt-1">{errors.internalName}</div>}
+                      </div>
+                      <div className="mb-3">
+                        <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Название, которое увидят пользователи</label>
+                        <input value={userFacingName} onChange={e => setUserFacingName(e.target.value)} placeholder="Название, которое увидит клиент в Wallet" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
+                      </div>
+                      <div className="mb-3">
+                        <label htmlFor="logoInput" className="block text-xs mb-1 font-medium text-[#232323] font-light">Загрузка логотипа</label>
+                        <input id="logoInput" name="logoInput" type="file" accept="image/*" ref={logoInput} onChange={handleLogo} className="w-full text-xs" />
+                        <div className="text-[10px] text-neutral-600 mt-1">60x45 px, PNG/SVG/JPG, отображается в левом верхнем углу</div>
+                        {logo && <div className="text-[10px] text-neutral-700 mt-1">Выбран файл: {logo.name}</div>}
+                        {errors.logo && <div className="text-xs text-red-500 mt-1">{errors.logo}</div>}
+                      </div>
+                      <div className="mb-3">
+                        <label htmlFor="bgInput" className="block text-xs mb-1 font-medium text-[#232323] font-light">Загрузка обложки</label>
+                        <input id="bgInput" name="bgInput" type="file" accept="image/*" ref={bgInput} onChange={handleBg} className="w-full text-xs" />
+                        <div className="text-[10px] text-neutral-600 mt-1">1000x648 px, заменяет цвет фона</div>
+                        {bg && <div className="text-[10px] text-neutral-700 mt-1">Выбран файл: {bg.name}</div>}
+                      </div>
+                      <div className="flex gap-4 mb-3">
+                        <div>
+                          <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Цвет фона</label>
+                          <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Цвет заголовков</label>
+                          <input type="color" value={labelColor} onChange={e => setLabelColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Цвет значений</label>
+                          <input type="color" value={valueColor} onChange={e => setValueColor(e.target.value)} className="w-8 h-8 p-0 border-none" />
+                        </div>
+                      </div>
+                      {/* Динамические поля временно убраны */}
+                      <div className="mb-3">
+                        <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Штрихкод / QR-код</label>
+                        <div className="flex gap-2 items-center">
+                          <select value={qrType} disabled className="border rounded px-2 py-1 text-xs">
+                            <option value="qr">QR Code</option>
+                          </select>
+                          <input value={qrValue} onChange={e => setQrValue(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-xs w-40 text-gray-900 bg-white placeholder-gray-400" />
+                        </div>
+                        <div className="text-[10px] text-neutral-600 mt-1">По умолчанию: user.memberId</div>
+                      </div>
+                    </>
+                  )}
+                  {createTab === 1 && (
+                    <>
+                      <div className="mb-3">
+                        <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Описание</label>
+                        <textarea maxLength={500} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Описание, правила, условия..." className="w-full border border-gray-300 rounded px-2 py-1 text-sm min-h-[60px] resize-vertical text-gray-900 bg-white placeholder-gray-400" />
+                      </div>
+                      <div className="mb-3">
+                        <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Контактный email</label>
+                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="mail@company.com" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
+                        {errors.email && <div className="text-xs text-red-500 mt-1">{errors.email}</div>}
+                      </div>
+                      <div className="mb-3">
+                        <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Телефон</label>
+                        <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+7 999 888-77-66" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
+                      </div>
+                      <div className="mb-3">
+                        <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Сайт</label>
+                        <input type="url" value={site} onChange={e => setSite(e.target.value)} placeholder="https://site.com" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white placeholder-gray-400" />
+                        {errors.site && <div className="text-xs text-red-500 mt-1">{errors.site}</div>}
+                      </div>
+                    </>
+                  )}
+                  {createTab === 2 && (
+                    <>
+                      <button type="button" className="mb-2 bg-[#D1E889] text-[#121E1D] rounded px-3 py-1 text-xs" onClick={() => handleAddBonus(10)}>+10 к балансу (тест)</button>
+                      <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
+                        <input type="checkbox" checked={autoUpdateBalance} onChange={e => setAutoUpdateBalance(e.target.checked)} />
+                        Автоматическое обновление баланса
+                      </label>
+                      <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
+                        <input type="checkbox" checked={expires} onChange={e => setExpires(e.target.checked)} />
+                        Срок действия карты
+                      </label>
+                      {expires && (
+                        <div className="pl-6 mb-2">
+                          <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Срок действия до:</label>
+                          <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white" />
+                        </div>
+                      )}
+                      <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
+                        <input type="checkbox" checked={notifyOnUse} onChange={e => setNotifyOnUse(e.target.checked)} />
+                        Оповещение при использовании
+                      </label>
+                      <label className="flex items-center gap-2 text-sm mb-2 text-[#232323]">
+                        <input type="checkbox" checked={limitUses} onChange={e => setLimitUses(e.target.checked)} />
+                        Ограничить количество использований
+                      </label>
+                      {limitUses && (
+                        <div className="pl-6 mb-2">
+                          <label className="block text-xs mb-1 font-medium text-[#232323] font-light">Максимум использований:</label>
+                          <input type="number" min={1} value={maxUses} onChange={e => setMaxUses(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm w-24 text-gray-900 bg-white" />
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {/* --- Новый блок: Конструктор динамических полей (только для лицевой стороны) --- */}
+                  {createTab === 0 && (
+                    <div className="mb-6 mt-4">
+                      <h2 className="text-base font-light text-black mb-2">Динамические поля</h2>
+                      <div className="mb-4">
+                        <label className="block text-[10px] font-medium text-[#232323] mb-1 flex items-center gap-2">
+                          <span role="img" aria-label="user">👤</span> Имя клиента
+                        </label>
+                        <input
+                          className="border border-gray-300 rounded px-2 py-1 w-full text-gray-900 bg-white placeholder-gray-400 text-sm"
+                          value={guestName}
+                          onChange={e => setGuestName(e.target.value)}
+                          placeholder="Например, Илон Маск"
+                        />
+                        <div className="text-[10px] text-neutral-600 mt-1">Это значение будет автоматически подставлено для каждого пользователя (user.fullName)</div>
+                      </div>
+                      <div className="mb-4">
+                        <label className="block text-[10px] font-medium text-[#232323] mb-1 flex items-center gap-2">
+                          <span role="img" aria-label="bonus">🎁</span> Бонус (%)
+                        </label>
+                        <input
+                          className="border border-gray-300 rounded px-2 py-1 w-full text-gray-900 bg-white placeholder-gray-400 text-sm"
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={bonusPercent}
+                          onChange={e => setBonusPercent(e.target.value)}
+                          placeholder="Например, 5"
+                        />
+                        <div className="text-[10px] text-neutral-600 mt-1">Это значение будет автоматически подставлено для каждого пользователя (user.bonusPercentage)</div>
+                      </div>
+                    </div>
+                  )}
+                  {/* --- конец блока конструктора --- */}
+                  <button
+                    type="submit"
+                    className="mt-6 bg-[#121e1d] text-white py-2 rounded text-sm w-full disabled:opacity-50"
+                    disabled={loading}
+                  >
+                    {loading ? 'Создание...' : 'Создать карту'}
+                  </button>
+                  {errors.api && <div className="mt-2 text-center text-red-600 text-sm">{errors.api}</div>}
+                  {msg && <div className="mt-2 text-center text-green-600 text-sm">{msg}</div>}
                 </div>
-              </div>
-            </form>
+                {/* Preview */}
+                <div className="flex-1 flex flex-col items-center">
+                  <div className="flex flex-col gap-2 items-center">
+                    {cardPreview}
+                    <div className="text-xs text-neutral-600 mt-1">Предпросмотр</div>
+                  </div>
+                </div>
+              </form>
+            )
           )}
           {activeTab === 'settings' && (
             <Settings />
