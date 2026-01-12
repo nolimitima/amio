@@ -225,9 +225,6 @@ module.exports = async (req, res) => {
       description: tpl.user_facing_name || "Digital Card",
       serialNumber: uuid,
 
-      // Unique grouping per business - prevents passes from different businesses stacking together
-      groupingIdentifier: `pass.amian.${issued.card_template_id}`,
-
       // Web service для push-обновлений
       webServiceURL: `${PUBLIC_BASE_URL}/api/passkit`,
       authenticationToken: authToken, // КРИТИЧНО: этот токен должен совпадать с auth_token в БД
