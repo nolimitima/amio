@@ -24,7 +24,7 @@ const PricingGate = ({ isExpired = false }) => {
         <div
             className="min-h-screen w-full flex items-center justify-center px-4 py-12"
             style={{
-                background: 'linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%)',
+                background: '#F1EFED',
                 fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
             }}
         >
