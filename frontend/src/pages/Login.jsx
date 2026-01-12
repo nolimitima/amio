@@ -13,7 +13,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email || !password) {
       setError('Пожалуйста, заполните все поля');
       return;
@@ -43,10 +43,10 @@ const Login = () => {
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/50">
             <div className="text-center mb-8">
               <div className="flex justify-center mb-4">
-                <img 
-                  src={logoWhite} 
-                  alt="Amian logo" 
-                  className="h-16 w-16 object-contain cursor-pointer hover:opacity-80 transition-opacity duration-200" 
+                <img
+                  src={logoWhite}
+                  alt="Amio logo"
+                  className="h-16 w-16 object-contain cursor-pointer hover:opacity-80 transition-opacity duration-200"
                   onClick={() => navigate('/')}
                 />
               </div>

@@ -494,8 +494,8 @@ const Dashboard = () => {
       <header className="w-full bg-white/80 sticky top-0 z-30 rounded-xl max-w-screen-xl mx-auto px-3 sm:px-4 py-3 flex justify-between items-center mt-4 md:mt-6 mb-6 md:mb-8 shadow-sm">
         {/* Left: Logo and name */}
         <div className="flex items-center gap-2 md:gap-3 select-none cursor-pointer" onClick={handleGoHome}>
-          <img src={headerLogo} alt="Amian logo" className="h-10 md:h-12 w-10 md:w-12 object-contain" />
-          <span className="text-[#121E1D] text-lg md:text-xl font-light font-[Inter]">Amian</span>
+          <img src={headerLogo} alt="Amio logo" className="h-10 md:h-12 w-10 md:w-12 object-contain" />
+          <span className="text-[#121E1D] text-lg md:text-xl font-light font-[Inter]">Amio</span>
         </div>
 
         {/* Center: Empty */}

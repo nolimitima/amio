@@ -35,7 +35,7 @@ PUBLIC_BASE_URL=https://your-domain.vercel.app
 # Секретный токен для проверки запросов от Apple
 AUTH_TOKEN=your_secret_authentication_token
 # Название твоей организации
-ORG_NAME=Amian
+ORG_NAME=Amio
 ```
 
 ### ❗️ Важное действие
@@ -161,7 +161,7 @@ EXECUTE PROCEDURE public.handle_updated_at();
 
 1.  Убедись, что все переменные окружения (Шаг 1) и триггер (Шаг 4) применены.
 2.  Задеплой код (Vercel).
-3.  Удали старую карту Amian с телефона.
+3.  Удали старую карту Amio с телефона.
 4.  Установи карту заново (просканируй QR-код).
 5.  Проверь логи Vercel: ты должен увидеть `POST` запрос на `.../registrations/...` (Это значит, `pushToken` сохранился).
 6.  Вызови свой эндпоинт для обновления баланса (например, `api/scanner/scan.js`).

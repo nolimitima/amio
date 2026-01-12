@@ -5,7 +5,7 @@ import PricingGate from '../components/PricingGate.jsx';
 
 const faqData = [
   { q: 'Что нужно, чтобы начать?', a: 'Просто зарегистрируйтесь и создайте первую карту — это займёт пару минут.' },
-  { q: 'Поддерживаются ли разные типы карт?', a: 'Да, Amian поддерживает купоны, абонементы, бонусные и скидочные карты.' },
+  { q: 'Поддерживаются ли разные типы карт?', a: 'Да, Amio поддерживает купоны, абонементы, бонусные и скидочные карты.' },
   { q: 'Как мои клиенты будут получать обновления по картам?', a: 'Все изменения на карте автоматически обновляются у клиента в Wallet — без приложений и SMS.' },
   { q: 'Есть ли пробный период?', a: 'Да, вы можете начать бесплатно и протестировать все возможности сервиса.' }
 ];
@@ -70,8 +70,8 @@ const Home = () => {
       <header className="w-full bg-white/80 sticky top-0 z-30 rounded-xl max-w-screen-xl mx-auto px-3 md:px-4 py-3 flex justify-between items-center mt-4 md:mt-6 mb-6 md:mb-8 shadow-sm">
         {/* Left: Logo and name */}
         <div className="flex items-center gap-2 md:gap-3 select-none cursor-pointer" onClick={() => navigate('/')}>
-          <img src={headerLogo} alt="Amian logo" className="h-10 md:h-12 w-10 md:w-12 object-contain" />
-          <span className="text-[#121E1D] text-lg md:text-xl font-light font-[Inter]">Amian</span>
+          <img src={headerLogo} alt="Amio logo" className="h-10 md:h-12 w-10 md:w-12 object-contain" />
+          <span className="text-[#121E1D] text-lg md:text-xl font-light font-[Inter]">Amio</span>
         </div>
         {/* Center: Navigation - hidden on mobile, visible on md+ */}
         <nav className="hidden md:flex gap-6 lg:gap-8 text-sm lg:text-base font-light">
@@ -108,7 +108,7 @@ const Home = () => {
           >
             Создать свою карту
           </button>
-          <img src="/phone-mock.png" alt="Превью карты Amian" className="w-[280px] sm:w-[330px] md:w-[410px] mx-auto z-10" style={{ marginBottom: '-60px', position: 'relative' }} />
+          <img src="/phone-mock.png" alt="Превью карты Amio" className="w-[280px] sm:w-[330px] md:w-[410px] mx-auto z-10" style={{ marginBottom: '-60px', position: 'relative' }} />
         </section>
 
         {/* WHY AMIAN */}
@@ -116,7 +116,7 @@ const Home = () => {
           <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl md:text-4xl font-extralight text-[#F1EFED] mb-6">
-                <span className="text-[#D1E889]">Amian</span> сервис для создания мобильных карт лояльности без кода.
+                <span className="text-[#D1E889]">Amio</span> — сервис для создания мобильных карт лояльности без кода.
               </h2>
               <p className="text-[#F1EFED] text-lg font-light mb-8">
                 Мы объединяем всё в одном месте: от генерации карт до автоматического обновления, без необходимости писать код или делать интеграции.
@@ -165,11 +165,11 @@ const Home = () => {
         <section className="w-full flex flex-col items-center justify-center py-12 px-4 md:px-0 max-w-5xl mx-auto relative z-10">
           <div className="bg-[#f1efed] rounded-2xl shadow-lg p-8 md:p-12 w-full flex flex-col gap-6 border border-[#121E1D]/10">
             <h3 className="text-xl md:text-2xl font-light text-[#121E1D] text-center mb-2 flex items-center gap-2 justify-center">
-              Как Amian помогает бизнесу и клиентам: история Алии <span className="text-2xl">☕️</span>
+              Как Amio помогает бизнесу и клиентам: история Алии <span className="text-2xl">☕️</span>
             </h3>
             <div className="border border-[#121E1D] rounded-xl p-5 bg-white text-[#232823] font-extralight text-base leading-relaxed">
               Алия — владелица уютной кофейни в центре города. Она всегда хотела дать своим постоянным клиентам удобные бонусные карты, но пластиковые терялись, а приложения устанавливать никто не хотел.<br />
-              С Amian всё изменилось: Алия всего за пару минут заполнила простую форму и получила цифровую карту лояльности, которую клиенты добавляют прямо в Apple Wallet и Google Pay — без скачивания и лишних действий.<br />
+              С Amio всё изменилось: Алия всего за пару минут заполнила простую форму и получила цифровую карту лояльности, которую клиенты добавляют прямо в Apple Wallet и Google Pay — без скачивания и лишних действий.<br />
               Теперь Алия видит, как клиенты чаще возвращаются и с радостью копят бонусы. А ей не нужно тратить время на сложные интеграции и поддержание приложений.
             </div>
           </div>
@@ -209,7 +209,7 @@ const Home = () => {
           <footer className="max-w-[calc(100%-8px)] mx-auto bg-[#121E1D] text-[#F1EFED] rounded-t-3xl relative overflow-hidden border-t border-[#232823]/30 flex flex-col items-center" style={{ paddingTop: '47px', paddingBottom: '23px' }}>
             {/* Верхняя часть футера */}
             <div className="flex flex-col items-center gap-6 w-full">
-              <img src="/src/assets/logo.png" alt="Amian logo" style={{ height: '49px', width: '49px' }} className="object-contain mb-2" />
+              <img src="/src/assets/logo.png" alt="Amio logo" style={{ height: '49px', width: '49px' }} className="object-contain mb-2" />
               <h2 className="text-3xl md:text-4xl font-light text-center">Создайте свою карту</h2>
               <div className="text-[#F1EFED]/80 text-base md:text-lg font-light text-center max-w-xl">Купоны, абонементы и накопительные баллы — без приложений и сложной интеграции. Повышайте продажи и укрепляйте доверие клиентов за счёт быстрых цифровых карт.</div>
               <button
@@ -249,7 +249,7 @@ const Home = () => {
             {/* Копирайт */}
             <div className="w-full text-center text-xs text-[#F1EFED]/60 font-extralight flex justify-center items-center" style={{ marginTop: '23px' }}>
               <span style={{ transform: 'translateY(-1px)' }}>
-                © {new Date().getFullYear()} Amian. Все права защищены.
+                © {new Date().getFullYear()} Amio. Все права защищены.
               </span>
             </div>
           </footer>

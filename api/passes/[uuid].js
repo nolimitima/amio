@@ -23,7 +23,7 @@ const PASS_P12_BASE64 = process.env.PASS_P12_BASE64;
 const PASS_P12_PASSWORD = process.env.PASS_P12_PASSWORD || "";
 const PASS_TYPE_IDENTIFIER = process.env.PASS_TYPE_IDENTIFIER; // напр. "pass.com.amian"
 const TEAM_IDENTIFIER = process.env.TEAM_IDENTIFIER;           // Apple Team ID
-const ORG_NAME = process.env.ORG_NAME || "Amian";
+const ORG_NAME = process.env.ORG_NAME || "Amio";
 const WWDR_CERT_BASE64 = process.env.WWDR_CERT_BASE64;         // (строка PEM ИЛИ base64(PEM/DER))
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL;           // Base URL for webServiceURL
 

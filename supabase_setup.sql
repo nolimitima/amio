@@ -1,4 +1,4 @@
--- Настройка Supabase для проекта Amian
+-- Настройка Supabase для проекта Amio
 -- Выполните эти команды в SQL Editor в Supabase Dashboard
 
 -- 1. Создание таблицы card_templates
