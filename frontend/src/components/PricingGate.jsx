@@ -68,7 +68,7 @@ const PricingGate = ({ isExpired = false }) => {
                                 START
                             </span>
                             <h2
-                                className="text-2xl font-semibold mb-2"
+                                className="text-2xl font-medium mb-2"
                                 style={{ color: '#1D1D1F' }}
                             >
                                 7 дней бесплатно
@@ -153,7 +153,7 @@ const PricingGate = ({ isExpired = false }) => {
                                 ПОЛНЫЙ ДОСТУП
                             </span>
                             <h2
-                                className="text-2xl font-semibold mb-2"
+                                className="text-2xl font-medium mb-2"
                                 style={{ color: '#1D1D1F' }}
                             >
                                 После пробного периода

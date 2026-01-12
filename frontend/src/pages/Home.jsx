@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import headerLogo from '../assets/logo-white.png';
+import PricingGate from '../components/PricingGate.jsx';
 
 const faqData = [
   { q: 'Что нужно, чтобы начать?', a: 'Просто зарегистрируйтесь и создайте первую карту — это займёт пару минут.' },
@@ -172,6 +173,11 @@ const Home = () => {
               Теперь Алия видит, как клиенты чаще возвращаются и с радостью копят бонусы. А ей не нужно тратить время на сложные интеграции и поддержание приложений.
             </div>
           </div>
+        </section>
+
+        {/* PRICING */}
+        <section id="pricing" className="w-full relative z-10">
+          <PricingGate />
         </section>
 
         {/* FAQ */}
