@@ -33,12 +33,14 @@ const DashboardNotifications = () => {
     // Textarea ref for auto-resize
     const textareaRef = useRef(null);
 
-    // Fetch campaigns history
+    // Fetch campaigns history - FILTERED BY CURRENT USER
     const fetchCampaigns = async () => {
+        if (!currentUser) return;
         setHistoryLoading(true);
         const { data, error } = await supabase
             .from('marketing_campaigns')
             .select('*')
+            .eq('sent_by', currentUser.id)  // SECURITY: Only show user's own campaigns
             .order('created_at', { ascending: false })
             .limit(20);
 
@@ -51,8 +53,10 @@ const DashboardNotifications = () => {
     };
 
     useEffect(() => {
-        fetchCampaigns();
-    }, []);
+        if (currentUser) {
+            fetchCampaigns();
+        }
+    }, [currentUser]);
 
     // Auto-resize textarea
     const handleBodyChange = (e) => {
@@ -395,8 +399,8 @@ const DashboardNotifications = () => {
                                                 {/* Status Badge */}
                                                 <span
                                                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${campaign.status === 'sent'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-gray-100 text-gray-600'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-gray-100 text-gray-600'
                                                         }`}
                                                 >
                                                     {campaign.status === 'sent' ? 'Отправлено' : 'Черновик'}

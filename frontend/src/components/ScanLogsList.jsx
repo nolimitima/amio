@@ -1,6 +1,7 @@
 // src/components/ScanLogsList.jsx
 import React from 'react';
 import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const PAGE_SIZE = 20;
 
@@ -15,6 +16,7 @@ const ACTION_LABELS = {
 };
 
 export default function ScanLogsList() {
+  const { currentUser } = useAuth();
   const [rows, setRows] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -27,14 +29,16 @@ export default function ScanLogsList() {
   const [dateTo, setDateTo] = React.useState('');
 
   const load = React.useCallback(async () => {
+    if (!currentUser) return;
     setLoading(true);
     setError(null);
     try {
       let q = supabase
         .from('scan_logs_business')
         .select(
-          'id, scanned_at, action, amount, location, card_uuid, guest_name, template_name'
+          'id, scanned_at, action, amount, location, card_uuid, guest_name, template_name, owner_id'
         )
+        .eq('owner_id', currentUser.id)  // SECURITY: Only show user's own scan logs
         .order('scanned_at', { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
@@ -54,7 +58,7 @@ export default function ScanLogsList() {
     } finally {
       setLoading(false);
     }
-  }, [page, actionFilter, search, dateFrom, dateTo]);
+  }, [currentUser, page, actionFilter, search, dateFrom, dateTo]);
 
   React.useEffect(() => {
     load();
