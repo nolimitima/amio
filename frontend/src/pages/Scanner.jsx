@@ -71,19 +71,9 @@ const Scanner = () => {
     };
   }, []);
 
-  // QR box function that ensures SQUARE overlay on all devices
   const qrboxFunction = (viewfinderWidth, viewfinderHeight) => {
     const minDimension = Math.min(viewfinderWidth, viewfinderHeight);
     const boxSize = Math.floor(minDimension * 0.65);
-    // DEBUG: Log to verify same config on mobile and desktop (remove after verification)
-    console.log('[QR Scanner Config]', {
-      viewfinderWidth,
-      viewfinderHeight,
-      minDimension,
-      boxSize,
-      isSquare: true,
-      device: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
-    });
     return { width: boxSize, height: boxSize };
   };
 

@@ -85,8 +85,6 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
 
-  console.log('Dashboard render, activeTab:', activeTab);
-
   // --- Fetch subscription status on mount ---
   useEffect(() => {
     const fetchProfile = async () => {
@@ -256,8 +254,6 @@ const Dashboard = () => {
         const { data: publicUrl } = supabase.storage.from('card-covers').getPublicUrl(data.path);
         bgUrlSupabase = publicUrl.publicUrl;
       }
-      // Проверка currentUser
-      console.log('currentUser:', currentUser);
       // Запись в таблицу card_templates
       const { data, error } = await supabase
         .from('card_templates')
@@ -284,8 +280,6 @@ const Dashboard = () => {
           limit_uses: limitUses,
           max_uses: limitUses ? maxUses : null
         }]);
-      console.log('INSERT result', { data, error });
-
       if (error) {
         setErrors({ api: error.message });
         setLoading(false);
