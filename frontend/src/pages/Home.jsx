@@ -231,17 +231,13 @@ const Home = () => {
               </div>
               <div className="flex flex-col items-center gap-4">
                 <div className="flex gap-4 mt-0 md:mt-4">
-                  {/* Instagram */}
-                  <a href="#" className="hover:text-[#F1EFED]" aria-label="Instagram">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5" /><circle cx="12" cy="12" r="4" strokeWidth="1.5" /><circle cx="17" cy="7" r="1.2" fill="currentColor" /></svg>
-                  </a>
-                  {/* LinkedIn */}
-                  <a href="#" className="hover:text-[#F1EFED]" aria-label="LinkedIn">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6"><rect width="18" height="18" x="3" y="3" rx="4" strokeWidth="1.5" /><path strokeWidth="1.5" d="M8.5 10.5v5M12 13v2.5m0-2.5V13a2 2 0 1 1 4 0v2.5" /><circle cx="8.5" cy="8.5" r="1" fill="currentColor" /></svg>
+                  {/* WhatsApp */}
+                  <a href="https://wa.me/77767802565" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" aria-label="WhatsApp">
+                    <img src="/whatsapp-logo.png" alt="WhatsApp" className="w-6 h-6 object-contain" />
                   </a>
                   {/* Telegram */}
-                  <a href="https://t.me/amianapp" target="_blank" rel="noopener noreferrer" className="hover:text-[#F1EFED]" aria-label="Telegram">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6"><path strokeWidth="1.5" d="M21 4L10 13.5" /><path strokeWidth="1.5" d="M21 4l-4.5 17a1 1 0 0 1-1.6.6l-4.2-3.2-2.1-1.5a1 1 0 0 1 .2-1.7l1.7-.7 8.7-7.2a.5.5 0 0 0-.6-.8l-13 5.2a1 1 0 0 0 .1 1.9l3.2.7" /></svg>
+                  <a href="https://t.me/temirlan22" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" aria-label="Telegram">
+                    <img src="/telegram-logo.png" alt="Telegram" className="w-6 h-6 object-contain" />
                   </a>
                 </div>
               </div>
