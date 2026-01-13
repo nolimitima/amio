@@ -209,7 +209,7 @@ const Home = () => {
           <footer className="max-w-[calc(100%-8px)] mx-auto bg-[#121E1D] text-[#F1EFED] rounded-t-3xl relative overflow-hidden border-t border-[#232823]/30 flex flex-col items-center" style={{ paddingTop: '47px', paddingBottom: '23px' }}>
             {/* Верхняя часть футера */}
             <div className="flex flex-col items-center gap-6 w-full">
-              <img src="/src/assets/logo.png" alt="Amio logo" style={{ height: '49px', width: '49px' }} className="object-contain mb-2" />
+              <img src="/logo.png" alt="Amio logo" style={{ height: '49px', width: '49px' }} className="object-contain mb-2" />
               <h2 className="text-3xl md:text-4xl font-light text-center">Создайте свою карту</h2>
               <div className="text-[#F1EFED]/80 text-base md:text-lg font-light text-center max-w-xl">Купоны, абонементы и накопительные баллы — без приложений и сложной интеграции. Повышайте продажи и укрепляйте доверие клиентов за счёт быстрых цифровых карт.</div>
               <button
