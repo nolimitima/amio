@@ -18,15 +18,36 @@ if (!SUPABASE_URL) throw new Error('SUPABASE_URL missing');
 if (!SERVICE_KEY) throw new Error('Service key missing (SUPABASE_SERVICE_ROLE/KEY)');
 
 // =============== UTILS ===============
-const parseAuthHeader = (authHeader) => {
-  if (!authHeader || typeof authHeader !== 'string') return null;
+// Robust brute-force auth token finder (handles all edge cases)
+function bruteForceFindAuthToken(req) {
+  if (!req.headers || typeof req.headers !== 'object') {
+    return null;
+  }
 
-  // Case-insensitive проверка префикса "ApplePass "
-  const match = authHeader.match(/^ApplePass\s+(.+)$/i);
-  if (!match) return null;
+  const headerKeys = Object.keys(req.headers);
 
-  return match[1].trim();
-};
+  // Ищем ключ "authorization" case-insensitive
+  for (const key of headerKeys) {
+    if (key.toLowerCase() === 'authorization') {
+      let value = req.headers[key];
+
+      // Handle case where header might be an array
+      if (Array.isArray(value)) {
+        value = value[0];
+      }
+
+      if (value && typeof value === 'string') {
+        // Убираем префикс "ApplePass " case-insensitive
+        const token = value.replace(/^ApplePass\s+/i, '').trim();
+        if (token) {
+          return { token, rawHeader: value, headerKey: key };
+        }
+      }
+    }
+  }
+
+  return null;
+}
 
 // =============== HANDLER ===============
 module.exports = async (req, res) => {
@@ -56,20 +77,39 @@ module.exports = async (req, res) => {
       auth: { persistSession: false },
     });
 
-    // Проверяем токен авторизации
-    // КРИТИЧНО: В Vercel заголовки могут быть в lowercase
-    const authHeader = req.headers.authorization
-      || req.headers['authorization']
-      || req.headers.Authorization
-      || req.headers['Authorization']
-      || '';
+    // ========== BRUTE-FORCE TOKEN FINDER ==========
+    // КРИТИЧНО: Логируем ВСЕ заголовки для диагностики
+    const allHeaderKeys = Object.keys(req.headers || {});
+    console.log(`📋 Total headers: ${allHeaderKeys.length}`);
+    console.log(`📋 Header keys: ${allHeaderKeys.join(', ')}`);
 
-    const authToken = parseAuthHeader(authHeader);
+    // Ищем authorization вручную и логируем
+    let foundAuthKey = null;
+    for (const key of allHeaderKeys) {
+      if (key.toLowerCase() === 'authorization') {
+        foundAuthKey = key;
+        console.log(`✅ Found authorization header with key: "${key}"`);
+        console.log(`   Value (first 50 chars): ${String(req.headers[key]).substring(0, 50)}`);
+        break;
+      }
+    }
+
+    if (!foundAuthKey) {
+      console.log('❌ Authorization header NOT FOUND in any case variation');
+    }
+
+    // Robust header extraction
+    const authResult = bruteForceFindAuthToken(req);
+    const authToken = authResult?.token;
+
     if (!authToken) {
       console.error('[PassKit] ❌ POST registration: No auth token');
-      console.error('   Raw header:', authHeader || '(empty)');
+      console.error('   Raw header:', authResult?.rawHeader || '(empty)');
+      console.error('   All headers:', JSON.stringify(req.headers, null, 2));
       return res.status(401).json({ error: 'Invalid authorization header' });
     }
+
+    console.log(`✅ Extracted auth token: ${authToken.substring(0, 10)}...`);
 
     // Проверяем, что для указанного serialNumber существует карта с таким auth_token
     const { data: card, error: cardError } = await supa
