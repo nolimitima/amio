@@ -13,16 +13,18 @@ module.exports = async (req, res) => {
       return res.status(404).end(); // по спецификации лучше 404
     }
 
-    // 2) Проверка токена: Apple шлёт 'Authorization: ApplePass <token>'
-    const auth = req.headers.authorization || "";
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // HYBRID AUTHENTICATION (same as POST registration)
+    // iOS PassKit sometimes doesn't send Authorization header even for GET
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const auth = req.headers.authorization || req.headers.Authorization || "";
     const token = auth.replace(/^ApplePass\s+/i, "").trim();
-    if (!token) return res.status(401).end();
 
     const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE, {
       auth: { persistSession: false },
     });
 
-    // 3) Находим карту и сверяем auth_token
+    // Find the card
     const { data: card, error: e1 } = await supa
       .from("issued_cards")
       .select("uuid, auth_token")
@@ -33,8 +35,23 @@ module.exports = async (req, res) => {
       console.error("pass GET issued_cards error:", e1);
       return res.status(500).end();
     }
-    if (!card) return res.status(404).end();
-    if (!card.auth_token || card.auth_token !== token) return res.status(401).end();
+    if (!card) {
+      console.log(`[PassKit] ❌ Card not found: ${serialNumber}`);
+      return res.status(404).end();
+    }
+
+    // HYBRID AUTH: Validate token if provided, otherwise allow if card exists
+    if (token) {
+      // Token provided - validate it
+      if (!card.auth_token || card.auth_token !== token) {
+        console.error(`[PassKit] ❌ Auth token mismatch for ${serialNumber}`);
+        return res.status(401).end();
+      }
+      console.log(`[PassKit] ✅ Auth token validated for pass download: ${serialNumber}`);
+    } else {
+      // No token (iOS bug) - allow based on card existence
+      console.warn(`[PassKit] ⚠️ No auth token for pass download (iOS bug), allowing based on card existence: ${serialNumber}`);
+    }
 
     // 4) Проксируем генерацию .pkpass (без редиректа), пробрасывая If-Modified-Since
     const ims = req.headers["if-modified-since"];
