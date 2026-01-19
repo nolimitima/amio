@@ -71,7 +71,7 @@ const PricingGate = ({ isExpired = false }) => {
                                 className="text-2xl font-medium mb-2"
                                 style={{ color: '#1D1D1F' }}
                             >
-                                7 дней бесплатно
+                                14 дней бесплатно
                             </h2>
                             <p
                                 className="text-sm font-light"
