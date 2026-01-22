@@ -77,7 +77,7 @@ export default function Privacy() {
                         <h2 className="text-base font-medium text-[#121E1D] mb-2">5. Контакты</h2>
                         <p className="text-sm font-light leading-relaxed">
                             По всем вопросам удаления или изменения данных:{' '}
-                            <a href="mailto:support@amio.kz" className="text-[#121E1D] underline hover:opacity-70">
+                            <a href="mailto:kunbassovtt@gmail.com" className="text-[#121E1D] underline hover:opacity-70">
                                 support@amio.kz
                             </a>
                         </p>
