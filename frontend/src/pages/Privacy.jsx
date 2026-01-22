@@ -4,6 +4,17 @@ import { useNavigate } from 'react-router-dom';
 export default function Privacy() {
     const navigate = useNavigate();
 
+    // Функция для возврата назад
+    const handleBack = () => {
+        // Если есть история браузера, возвращаемся назад
+        if (window.history.length > 1) {
+            navigate(-1);
+        } else {
+            // Иначе идём на главную
+            navigate('/');
+        }
+    };
+
     return (
         <div className="font-[Inter] bg-[#F1EFED] min-h-screen w-full">
             {/* Header */}
@@ -66,15 +77,9 @@ export default function Privacy() {
                         <h2 className="text-base font-medium text-[#121E1D] mb-2">5. Контакты</h2>
                         <p className="text-sm font-light leading-relaxed">
                             По всем вопросам удаления или изменения данных:{' '}
-                            <a href="mailto:kunbassovtt@gmail.com" className="text-[#121E1D] underline hover:opacity-70">
-                                kunbassovtt@gmail.com
+                            <a href="mailto:support@amio.kz" className="text-[#121E1D] underline hover:opacity-70">
+                                support@amio.kz
                             </a>
-                            <br />
-                            Служба поддержки:{' '}
-                            <a href="https://t.me/nolimitima" target="_blank" rel="noopener noreferrer" className="text-[#121E1D] underline hover:opacity-70">
-                                @nolimitima
-                            </a>{' '}
-                            (Telegram)
                         </p>
                     </section>
 
@@ -89,10 +94,10 @@ export default function Privacy() {
                 {/* Back button */}
                 <div className="mt-8 text-center">
                     <button
-                        onClick={() => navigate('/')}
+                        onClick={handleBack}
                         className="px-6 py-3 rounded-full font-light text-[#121E1D] bg-[#D1E889] hover:bg-[#e6f7a1] transition-all duration-200 shadow-md shadow-[#D1E889]/20"
                     >
-                        ← Назад на главную
+                        ← Назад
                     </button>
                 </div>
             </main>
