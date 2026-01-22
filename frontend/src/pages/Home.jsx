@@ -243,7 +243,10 @@ const Home = () => {
               </div>
             </div>
             {/* Копирайт */}
-            <div className="w-full text-center text-xs text-[#F1EFED]/60 font-extralight flex justify-center items-center" style={{ marginTop: '23px' }}>
+            <div className="w-full text-center text-xs text-[#F1EFED]/60 font-extralight flex flex-col items-center gap-2" style={{ marginTop: '23px' }}>
+              <a href="/privacy" className="hover:text-[#F1EFED] underline transition-colors">
+                Политика конфиденциальности
+              </a>
               <span style={{ transform: 'translateY(-1px)' }}>
                 © {new Date().getFullYear()} Amio. Все права защищены.
               </span>

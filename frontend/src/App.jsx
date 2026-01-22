@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import CardPreview from './pages/CardPreview.jsx';
 import JoinForm from './pages/join/JoinForm.jsx';
 import JoinSuccess from './pages/join/JoinSuccess.jsx';
+import Privacy from './pages/Privacy.jsx';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import Scanner from './pages/Scanner.jsx' // ✅ 1. Импортируем новый компонент
 
@@ -32,6 +33,7 @@ function AppRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/privacy" element={<Privacy />} />
       <Route path="/card/:id" element={<CardPreview />} />
       <Route path="/join/:slug" element={<JoinForm />} />
       <Route path="/join/success" element={<JoinSuccess />} />

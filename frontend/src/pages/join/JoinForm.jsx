@@ -126,6 +126,13 @@ export default function JoinForm() {
         >
           {loading ? "Создаём…" : "Получить карту"}
         </button>
+
+        <p className="text-xs text-center text-black/50 mt-3">
+          Нажимая на кнопку, вы принимаете условия{' '}
+          <a href="/privacy" className="underline hover:text-black/70">
+            Политики конфиденциальности
+          </a>
+        </p>
       </form>
     </BrandLayout>
   );
