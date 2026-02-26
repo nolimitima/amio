@@ -19,5 +19,5 @@ export const SUBSCRIPTION_STATUS = {
 // Pricing configuration (in KZT)
 export const PRICING = {
     TRIAL_DAYS: 14,
-    MONTHLY_PRICE: '9 990 ₸',
+    MONTHLY_PRICE: '13 990 ₸',
 };
