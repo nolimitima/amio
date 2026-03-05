@@ -239,6 +239,10 @@ const Home = () => {
                   <a href="https://t.me/temirlan22" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" aria-label="Telegram">
                     <img src="/telegram-logo.png" alt="Telegram" className="w-6 h-6 object-contain" />
                   </a>
+                  {/* Email */}
+                  <a href="mailto:kunbassovtt@gmail.com" className="hover:opacity-80 transition-opacity" aria-label="Email">
+                    <img src="/email-icon.png" alt="Email" className="w-6 h-6 object-contain" />
+                  </a>
                 </div>
               </div>
             </div>
