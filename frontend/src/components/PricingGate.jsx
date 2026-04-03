@@ -28,13 +28,13 @@ const PricingGate = ({ isExpired = false }) => {
                 {/* Header */}
                 <div className="text-center mb-10">
                     <h1
-                        className="text-3xl md:text-4xl font-bold tracking-tight mb-3"
+                        className="text-3xl md:text-4xl font-light tracking-tight mb-3"
                         style={{ color: '#1D1D1F' }}
                     >
                         Начните работу с платформой
                     </h1>
                     <p
-                        className="text-lg font-normal max-w-md mx-auto"
+                        className="text-lg font-light max-w-md mx-auto"
                         style={{ color: '#86868B' }}
                     >
                         Протестируйте все инструменты для удержания клиентов.
@@ -51,7 +51,7 @@ const PricingGate = ({ isExpired = false }) => {
                 >
                     {/* Badge */}
                     <span
-                        className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold mb-6 uppercase tracking-wider"
+                        className="inline-block px-4 py-1.5 rounded-full text-xs font-light mb-6 uppercase tracking-wider"
                         style={{
                             background: '#1D1D1F',
                             color: '#FFFFFF',
@@ -61,29 +61,37 @@ const PricingGate = ({ isExpired = false }) => {
                     </span>
                     
                     <h2
-                        className="text-2xl font-bold mb-6"
+                        className="text-2xl font-light mb-6"
                         style={{ color: '#1D1D1F' }}
                     >
                         Полный доступ
                     </h2>
 
                     <div className="mb-10 flex flex-col items-center">
-                        <div className="flex items-baseline gap-2 mb-2">
-                            <span
-                                className="text-4xl md:text-5xl font-bold tracking-tight"
-                                style={{ color: '#1D1D1F' }}
-                            >
-                                13 990 ₸
-                            </span>
-                            <span
-                                className="text-lg font-normal"
+                        <div className="flex flex-col items-center gap-1 mb-2">
+                            <span 
+                                className="text-xl font-light line-through"
                                 style={{ color: '#86868B' }}
                             >
-                                / мес
+                                19 990 ₸
                             </span>
+                            <div className="flex items-baseline gap-2">
+                                <span
+                                    className="text-4xl md:text-5xl font-light tracking-tight"
+                                    style={{ color: '#1D1D1F' }}
+                                >
+                                    13 990 ₸
+                                </span>
+                                <span
+                                    className="text-lg font-light"
+                                    style={{ color: '#86868B' }}
+                                >
+                                    / мес
+                                </span>
+                            </div>
                         </div>
                         <span
-                            className="text-sm font-medium"
+                            className="text-sm font-light"
                             style={{ color: '#86868B' }}
                         >
                             (Первые 14 дней — бесплатно)
@@ -100,7 +108,7 @@ const PricingGate = ({ isExpired = false }) => {
                         ].map((feature, index) => (
                             <li
                                 key={index}
-                                className="flex items-center gap-3 text-base font-medium"
+                                className="flex items-center gap-3 text-base font-light"
                                 style={{ color: '#1D1D1F' }}
                             >
                                 <svg
@@ -125,7 +133,7 @@ const PricingGate = ({ isExpired = false }) => {
                         href={getWhatsAppUrl()}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block w-full py-4 px-6 rounded-xl text-center font-bold text-lg transition-all duration-200 hover:opacity-90"
+                        className="block w-full py-4 px-6 rounded-xl text-center font-light text-lg transition-all duration-200 hover:opacity-90"
                         style={{
                             background: '#D1E889',
                             color: '#1D1D1F',
@@ -137,7 +145,7 @@ const PricingGate = ({ isExpired = false }) => {
 
                 {/* Footer note */}
                 <p
-                    className="text-center text-sm md:text-base mt-8 font-normal"
+                    className="text-center text-sm md:text-base mt-8 font-light"
                     style={{ color: '#86868B' }}
                 >
                     Менеджер свяжется с вами в WhatsApp для активации
