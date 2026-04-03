@@ -21,6 +21,7 @@ export default function ScanLogsList() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [page, setPage] = React.useState(1);
+  const [exporting, setExporting] = React.useState(false);
 
   // фильтры
   const [actionFilter, setActionFilter] = React.useState('');
@@ -60,6 +61,55 @@ export default function ScanLogsList() {
     }
   }, [currentUser, page, actionFilter, search, dateFrom, dateTo]);
 
+  // CSV export — fetches ALL matching records (ignoring pagination)
+  const handleExportCSV = React.useCallback(async () => {
+    if (!currentUser) return;
+    setExporting(true);
+    try {
+      let q = supabase
+        .from('scan_logs_business')
+        .select('scanned_at, guest_name, action, amount, card_uuid')
+        .eq('owner_id', currentUser.id)
+        .order('scanned_at', { ascending: false });
+
+      if (actionFilter) q = q.eq('action', actionFilter);
+      if (dateFrom) q = q.gte('scanned_at', dateFrom);
+      if (dateTo) q = q.lte('scanned_at', dateTo);
+      if (search)
+        q = q.or(
+          `guest_name.ilike.%${search}%,card_uuid.ilike.%${search}%,template_name.ilike.%${search}%`
+        );
+
+      const { data, error } = await q;
+      if (error) throw error;
+
+      const csvHeader = 'Дата,Гость,Действие,Сумма,UUID';
+      const csvRows = (data || []).map((r) => {
+        const date = new Date(r.scanned_at).toLocaleString();
+        const guest = (r.guest_name || '').replace(/[,"]/g, ' ');
+        const action = ACTION_LABELS[r.action] || r.action;
+        const amount = r.amount ?? '';
+        const uuid = r.card_uuid || '';
+        return `"${date}","${guest}","${action}","${amount}","${uuid}"`;
+      });
+
+      // BOM for Excel to recognize UTF-8
+      const bom = '\uFEFF';
+      const csv = bom + csvHeader + '\n' + csvRows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `scans_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e.message || 'Ошибка экспорта');
+    } finally {
+      setExporting(false);
+    }
+  }, [currentUser, actionFilter, search, dateFrom, dateTo]);
+
   React.useEffect(() => {
     load();
   }, [load]);
@@ -68,9 +118,18 @@ export default function ScanLogsList() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-extralight text-neutral-900 mb-6">Сканы</h2>
-        <a href="/scanner" className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-light transition-all duration-200 shadow-md flex items-center gap-2">
-          📷 Открыть Сканер
-        </a>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportCSV}
+            disabled={exporting}
+            className="bg-neutral-800 hover:bg-neutral-900 disabled:opacity-50 text-white px-5 py-3 rounded-xl font-light transition-all duration-200 shadow-md flex items-center gap-2 text-sm"
+          >
+            {exporting ? '⏳ Экспорт…' : '📥 Скачать таблицу'}
+          </button>
+          <a href="/scanner" className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-light transition-all duration-200 shadow-md flex items-center gap-2">
+            📷 Открыть Сканер
+          </a>
+        </div>
       </div>
 
       {/* Фильтры */}
