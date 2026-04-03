@@ -116,7 +116,7 @@ const Home = () => {
             </span>
           </h1>
           <p className="text-[#232823] text-sm md:text-base lg:text-lg font-light mb-6 mt-4 text-center max-w-2xl mx-auto px-2">
-            Создавайте бонусные карты, купоны и абонементыкоторые автоматически появляются в телефоне клиента
+            Создавайте бонусные карты, купоны и абонементы которые автоматически появляются в телефоне клиента
           </p>
           <button
             className="bg-[#D1E889] hover:bg-[#e6f7a1] text-[#121E1D] text-base md:text-lg font-light rounded-full px-6 md:px-8 py-3 transition-all duration-200 mb-6 mt-0 mx-auto block shadow-md shadow-[#D1E889]/20"
