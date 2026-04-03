@@ -12,17 +12,33 @@ const faqData = [
 
 const features = [
   {
-    icon: '⚡',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+      </svg>
+    ),
     title: 'Настройка за 5 минут',
     desc: 'Выберите шаблон, введите данные — карта готова.'
   },
   {
-    icon: '📱',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+      </svg>
+    ),
     title: 'Поддержка Apple, Google Wallet',
     desc: 'Ваши карты автоматически появляются в мобильных кошельках клиентов.'
   },
   {
-    icon: '🔄',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+        <path d="M21 12a9 9 0 1 0-9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+        <path d="M16 21v-5h5" />
+      </svg>
+    ),
     title: 'Автоматическое обновление',
     desc: 'Все изменения на вашей стороне сразу отображаются у клиентов.'
   }
@@ -100,7 +116,7 @@ const Home = () => {
             </span>
           </h1>
           <p className="text-[#232823] text-sm md:text-base lg:text-lg font-light mb-6 mt-4 text-center max-w-2xl mx-auto px-2">
-            Купоны, абонементы и накопительные баллы — без приложений и сложной интеграции.
+            Создавайте бонусные карты, купоны и абонементыкоторые автоматически появляются в телефоне клиента
           </p>
           <button
             className="bg-[#D1E889] hover:bg-[#e6f7a1] text-[#121E1D] text-base md:text-lg font-light rounded-full px-6 md:px-8 py-3 transition-all duration-200 mb-6 mt-0 mx-auto block shadow-md shadow-[#D1E889]/20"
@@ -165,7 +181,7 @@ const Home = () => {
         <section className="w-full flex flex-col items-center justify-center py-12 px-4 md:px-0 max-w-5xl mx-auto relative z-10">
           <div className="bg-[#f1efed] rounded-2xl shadow-lg p-8 md:p-12 w-full flex flex-col gap-6 border border-[#121E1D]/10">
             <h3 className="text-xl md:text-2xl font-light text-[#121E1D] text-center mb-2 flex items-center gap-2 justify-center">
-              Как Amio помогает бизнесу и клиентам: история Алии <span className="text-2xl">☕️</span>
+              Как Amio помогает бизнесу и клиентам: история Алии <span className="text-2xl"></span>
             </h3>
             <div className="border border-[#121E1D] rounded-xl p-5 bg-white text-[#232823] font-extralight text-base leading-relaxed">
               Алия — владелица уютной кофейни в центре города. Она всегда хотела дать своим постоянным клиентам удобные бонусные карты, но пластиковые терялись, а приложения устанавливать никто не хотел.<br />
