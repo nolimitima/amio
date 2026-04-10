@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import headerLogo from '../assets/logo-white.png';
 
 export default function Privacy() {
     const navigate = useNavigate();
@@ -23,7 +24,7 @@ export default function Privacy() {
                     className="flex items-center gap-2 md:gap-3 select-none cursor-pointer"
                     onClick={() => navigate('/')}
                 >
-                    <img src="/logo-white.png" alt="Amio logo" className="h-10 md:h-12 w-10 md:w-12 object-contain" />
+                    <img src={headerLogo} alt="Amio logo" className="h-10 md:h-12 w-10 md:w-12 object-contain" />
                     <span className="text-[#121E1D] text-lg md:text-xl font-light font-[Inter]">Amio</span>
                 </div>
                 <button
