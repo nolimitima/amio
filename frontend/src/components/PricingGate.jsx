@@ -59,7 +59,7 @@ const PricingGate = ({ isExpired = false }) => {
                     >
                         Единый тариф
                     </span>
-                    
+
                     <h2
                         className="text-2xl font-light mb-6"
                         style={{ color: '#1D1D1F' }}
@@ -69,7 +69,7 @@ const PricingGate = ({ isExpired = false }) => {
 
                     <div className="mb-10 flex flex-col items-center">
                         <div className="flex flex-col items-center gap-1 mb-2">
-                            <span 
+                            <span
                                 className="text-xl font-light line-through"
                                 style={{ color: '#86868B' }}
                             >
@@ -80,7 +80,7 @@ const PricingGate = ({ isExpired = false }) => {
                                     className="text-4xl md:text-5xl font-light tracking-tight"
                                     style={{ color: '#1D1D1F' }}
                                 >
-                                    13 990 ₸
+                                    12 990 ₸
                                 </span>
                                 <span
                                     className="text-lg font-light"
