@@ -251,7 +251,7 @@ const Home = () => {
                     <img src="/whatsapp-logo.png" alt="WhatsApp" className="w-6 h-6 object-contain" />
                   </a>
                   {/* Telegram */}
-                  <a href="https://t.me/temirlan22" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" aria-label="Telegram">
+                  <a href="https://t.me/temirttg" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" aria-label="Telegram">
                     <img src="/telegram-logo.png" alt="Telegram" className="w-6 h-6 object-contain" />
                   </a>
                   {/* Email */}
